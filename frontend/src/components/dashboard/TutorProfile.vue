@@ -652,9 +652,6 @@ const saveProfile = async () => {
         id: session.user.id,
         first_name: editForm.value.first_name,
         last_name: editForm.value.last_name,
-        barangay: editForm.value.barangay,
-        municipality: editForm.value.municipality,
-        province: editForm.value.province,
       }, { onConflict: 'id' });
     }
 

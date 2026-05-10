@@ -225,17 +225,12 @@ const handleSignup = async () => {
     if (authError) throw authError;
     
     if (authData.user) {
-      // Insert all data into Supabase — add barangay/municipality/province columns
-      // to your Supabase profiles table for this to work
+      // Keep Supabase profile payload minimal for schema compatibility.
+      // Full location/profile fields are persisted in Django profile below.
       const { error: profileError } = await supabase.from('profiles').insert({
         id: authData.user.id,
         first_name: form.firstName,
         last_name: form.lastName,
-        middle_name: form.middleName,
-        name_extension: form.nameExtension,
-        barangay: form.barangay,
-        municipality: form.municipality,
-        province: form.province,
         username: form.username,
         role: selectedRole.value,
       });
