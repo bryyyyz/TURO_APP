@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.utils import timezone
 from pathlib import Path
+from django.db import DatabaseError
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Profile, ProfileCredentialDocument, ExpertisePost, SessionSlot, TutorAvailability, Booking, Message, Payment
@@ -45,13 +46,18 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_credentials_documents(self, obj):
         request = self.context.get('request')
         docs = []
-        for d in obj.credential_documents.all():
-            file_url = request.build_absolute_uri(d.file.url) if request else d.file.url
-            docs.append({
-                'id': d.id,
-                'name': Path(d.file.name).name,
-                'url': file_url,
-            })
+        try:
+            for d in obj.credential_documents.all():
+                file_url = request.build_absolute_uri(d.file.url) if request else d.file.url
+                docs.append({
+                    'id': d.id,
+                    'name': Path(d.file.name).name,
+                    'url': file_url,
+                })
+        except DatabaseError:
+            # Backward-compatible fallback when the credential documents table
+            # has not yet been migrated in the deployed environment.
+            return []
         return docs
 
     def update(self, instance, validated_data):

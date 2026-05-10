@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.db import DatabaseError
 from rest_framework import viewsets, permissions, response, status
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.views import APIView
@@ -210,14 +211,17 @@ class AdminTierRequestsView(APIView):
             credentials_document_url = None
             if p.credentials_document:
                 credentials_document_url = request.build_absolute_uri(p.credentials_document.url)
-            credentials_documents = [
-                {
-                    'id': d.id,
-                    'name': d.file.name.split('/')[-1],
-                    'url': request.build_absolute_uri(d.file.url),
-                }
-                for d in p.credential_documents.all()
-            ]
+            try:
+                credentials_documents = [
+                    {
+                        'id': d.id,
+                        'name': d.file.name.split('/')[-1],
+                        'url': request.build_absolute_uri(d.file.url),
+                    }
+                    for d in p.credential_documents.all()
+                ]
+            except DatabaseError:
+                credentials_documents = []
             avatar_url = None
             if p.avatar:
                 avatar_url = request.build_absolute_uri(p.avatar.url)
