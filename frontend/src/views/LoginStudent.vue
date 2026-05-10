@@ -128,7 +128,7 @@ const features = [
 ];
 
 async function assertAccountRole(expectedRole) {
-  const { data } = await profileService.getProfileByEmail(username.value);
+  const { data } = await profileService.getProfileByEmail(username.value, expectedRole);
   const profiles = Array.isArray(data) ? data : (data?.results || []);
   const profile = profiles[0];
   const actualRole = profile?.role || '';
