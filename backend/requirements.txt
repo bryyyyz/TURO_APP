@@ -1,0 +1,8 @@
+Django>=4.2
+djangorestframework
+django-cors-headers
+django-environ
+Pillow
+psycopg[binary]>=3.1
+gunicorn
+whitenoise
