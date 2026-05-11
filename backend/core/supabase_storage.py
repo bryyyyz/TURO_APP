@@ -53,6 +53,23 @@ class SupabaseStorage(Storage):
         # This assumes the bucket is public.
         return f"{self.supabase_url}/storage/v1/object/public/{self.bucket}/{quote(key)}"
 
+    def _signed_url(self, key: str, expires_in: int = 60 * 60 * 24 * 7) -> str:
+        """
+        Generate a signed URL for private buckets.
+        """
+        url = f"{self.supabase_url}/storage/v1/object/sign/{self.bucket}/{quote(key)}"
+        r = requests.post(url, headers=self._headers("application/json"), json={"expiresIn": int(expires_in)}, timeout=15)
+        if r.status_code >= 400:
+            raise IOError(f"Supabase signed URL failed ({r.status_code}): {r.text[:300]}")
+        data = r.json() if r.content else {}
+        signed_path = data.get("signedURL") or data.get("signedUrl")
+        if not signed_path:
+            raise IOError("Supabase signed URL response missing signedURL")
+        # signedURL is usually a path starting with /storage/v1/...
+        if str(signed_path).startswith("http"):
+            return signed_path
+        return f"{self.supabase_url}{signed_path}"
+
     def _save(self, name, content):
         key = self._object_path(name)
 
@@ -91,10 +108,14 @@ class SupabaseStorage(Storage):
 
     def url(self, name):
         key = self._object_path(name)
+        # If the object is missing in Supabase (common right after switching from local MEDIA_ROOT),
+        # fall back to local /media/ URL so existing deployments can still serve old files.
+        if not self.exists(key):
+            return f"/media/{quote(key)}"
+
         if self.public:
             return self._public_url(key)
-        # If private, caller should generate signed URLs; for now, return the object endpoint.
-        return f"{self.supabase_url}/storage/v1/object/{self.bucket}/{quote(key)}"
+        return self._signed_url(key)
 
     def get_available_name(self, name, max_length=None):
         # We'll handle collisions in _save
