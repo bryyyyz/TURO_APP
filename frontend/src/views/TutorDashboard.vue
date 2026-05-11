@@ -225,7 +225,7 @@ import { buildTutorActivities } from '../utils/buildDashboardActivity';
 import { OPEN_NOTIFICATIONS } from '../symbols/injectionKeys';
 
 const router = useRouter();
-const { showToast } = useToast();
+const { showToast, toasts } = useToast();
 const user = ref(null);
 const profile = ref(null);
 const currentTab = ref('overview');
@@ -460,6 +460,8 @@ onUnmounted(() => {
 const handleLogout = async () => {
   if (loggingOut.value) return;
   loggingOut.value = true;
+  // Clear any existing toasts to prevent double notifications
+  toasts.value = [];
   try {
     // Supabase signOut can occasionally leave a stale in-memory session until refresh.
     // Clear local UI state and hard-redirect fallback to ensure the user is actually out.
@@ -477,7 +479,10 @@ const handleLogout = async () => {
     }
   } catch (e) {
     console.error('Logout failed:', e);
-    showToast('Could not log out. Please try again.', 'error');
+    // Only show error if we haven't already navigated away
+    if (window.location.pathname.startsWith('/dashboard/')) {
+      showToast('Could not log out. Please try again.', 'error');
+    }
   } finally {
     loggingOut.value = false;
   }

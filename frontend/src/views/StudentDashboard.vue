@@ -216,7 +216,7 @@ import { buildStudentActivities } from '../utils/buildDashboardActivity';
 import { OPEN_NOTIFICATIONS } from '../symbols/injectionKeys';
 
 const router = useRouter();
-const { showToast } = useToast();
+const { showToast, toasts } = useToast();
 const user = ref(null);
 const profile = ref(null);
 const currentTab = ref('dashboard');
@@ -443,6 +443,8 @@ watch(
 const handleLogout = async () => {
   if (loggingOut.value) return;
   loggingOut.value = true;
+  // Clear any existing toasts to prevent double notifications
+  toasts.value = [];
   try {
     await supabase.auth.signOut();
     showLogoutMenu.value = false;
@@ -458,7 +460,10 @@ const handleLogout = async () => {
     }
   } catch (e) {
     console.error('Logout failed:', e);
-    showToast('Could not log out. Please try again.', 'error');
+    // Only show error if we haven't already navigated away
+    if (window.location.pathname.startsWith('/dashboard/')) {
+      showToast('Could not log out. Please try again.', 'error');
+    }
   } finally {
     loggingOut.value = false;
   }
