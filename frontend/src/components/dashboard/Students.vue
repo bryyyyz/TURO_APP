@@ -85,7 +85,7 @@
             <tr v-if="loading"><td colspan="6" style="text-align:center; padding: 2rem;">Loading students...</td></tr>
             <tr v-else-if="studentList.length === 0"><td colspan="6" style="text-align:center; padding: 2rem; color: #94a3b8;">No students have booked sessions with you yet.</td></tr>
             <tr v-for="s in studentList" :key="s.id" v-else>
-              <td>
+              <td data-label="Student">
                 <div class="student-cell">
                   <img :src="s.avatar" alt="Avatar" class="mini-avatar" />
                   <div class="cell-info">
@@ -94,16 +94,16 @@
                   </div>
                 </div>
               </td>
-              <td><span class="subject-tag">{{ s.subject }}</span></td>
-              <td>
+              <td data-label="Subject"><span class="subject-tag">{{ s.subject }}</span></td>
+              <td data-label="Progress">
                 <div class="progress-cell">
                   <div class="progress-bar"><div class="fill" :style="{ width: s.progress + '%', background: s.pColor }"></div></div>
                   <span class="p-text">{{ s.progress }}%</span>
                 </div>
               </td>
-              <td class="text-bold">{{ s.sessions }} sessions</td>
-              <td><span :class="['status-pill', s.status.toLowerCase()]">{{ s.status }}</span></td>
-              <td><button class="btn-more">⋮</button></td>
+              <td data-label="Sessions" class="text-bold">{{ s.sessions }} sessions</td>
+              <td data-label="Status"><span :class="['status-pill', s.status.toLowerCase()]">{{ s.status }}</span></td>
+              <td data-label="Actions"><button class="btn-more" aria-label="More actions">⋮</button></td>
             </tr>
           </tbody>
         </table>
@@ -442,4 +442,94 @@ const avgProgress = computed(() => {
 
 .rows-selector { display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: #64748b; font-weight: 600; }
 .rows-selector select { background: #f8fafc; border: 1px solid #f1f5f9; padding: 0.4rem 0.75rem; border-radius: 0.5rem; font-weight: 700; outline: none; }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .student-stats { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .students-container { gap: 1.25rem; overflow-x: hidden; }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .page-header h1 { font-size: 1.35rem; line-height: 1.2; }
+  .page-header p { font-size: 0.85rem; }
+
+  .header-actions { flex-direction: column; width: 100%; gap: 0.5rem; }
+  .header-btn { width: 100%; justify-content: center; padding: 0.65rem 1rem; border-radius: 1rem; }
+  .date-btn span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-stats { grid-template-columns: 1fr; gap: 1rem; }
+  .s-card { padding: 1.1rem 1.1rem 2.2rem; border-radius: 1.1rem; }
+  .s-info h2 { font-size: 1.8rem; }
+
+  .list-card { padding: 1.25rem 1.1rem; border-radius: 1.1rem; }
+  .card-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .card-header .header-actions { width: 100%; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+  .btn-action { width: 100%; justify-content: center; }
+  .sort-dropdown { width: 100%; justify-content: space-between; }
+
+  /* Table → stacked cards */
+  .table-container { overflow: visible; }
+  .student-table thead { display: none; }
+  .student-table,
+  .student-table tbody,
+  .student-table tr,
+  .student-table td { display: block; width: 100%; }
+
+  .student-table tr {
+    border: 1px solid #f1f5f9;
+    border-radius: 1rem;
+    margin-bottom: 0.9rem;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+  }
+  .student-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .student-table td:last-child { border-bottom: none; }
+  .student-table td::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-top: 2px;
+  }
+
+  .student-cell { gap: 0.75rem; }
+  .mini-avatar { width: 40px; height: 40px; }
+  .cell-info strong { font-size: 0.9rem; }
+
+  .progress-cell { min-width: 0; width: 100%; justify-content: flex-end; gap: 0.75rem; }
+  .progress-bar { max-width: 160px; }
+
+  .btn-more { padding: 0.25rem 0.4rem; }
+
+  .table-pagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0;
+  }
+  .page-controls { justify-content: center; }
+  .rows-selector { justify-content: space-between; }
+}
 </style>
