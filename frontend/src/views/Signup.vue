@@ -131,11 +131,6 @@
             </div>
 
             <div class="field">
-              <label>Username</label>
-              <input type="text" v-model="form.username" required />
-            </div>
-
-            <div class="field">
               <label>Password</label>
               <input type="password" v-model="form.password" required />
             </div>
@@ -187,7 +182,6 @@ const form = reactive({
   municipality: '',
   province: '',
   email: '', 
-  username: '', 
   password: '',
   confirmPassword: ''
 });
@@ -218,6 +212,7 @@ const handleSignup = async () => {
   if (loading.value) return;
   loading.value = true;
   try {
+    const derivedUsername = String(form.email || '').split('@')[0] || 'user';
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -242,7 +237,9 @@ const handleSignup = async () => {
         id: authData.user.id,
         first_name: form.firstName,
         last_name: form.lastName,
-        username: form.username,
+        // Some Supabase schemas require a non-null username; derive it from email
+        // without asking the user to enter one.
+        username: derivedUsername,
         role: selectedRole.value,
       });
       if (profileError) throw profileError;
