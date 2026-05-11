@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'core.request_timing_middleware.RequestTimingMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -99,6 +100,26 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': env.db(),
+}
+
+DATABASES['default']['CONN_MAX_AGE'] = env.int('DJANGO_CONN_MAX_AGE', default=60)
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'core.timing': {
+            'handlers': ['console'],
+            'level': env('DJANGO_TIMING_LOG_LEVEL', default='INFO'),
+            'propagate': False,
+        },
+    },
 }
 
 
