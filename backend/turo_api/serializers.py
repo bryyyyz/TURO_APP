@@ -3,6 +3,7 @@ from datetime import datetime
 from django.utils import timezone
 from pathlib import Path
 from django.db import DatabaseError
+from django.core.files.storage.handler import InvalidStorageError
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Profile, ProfileCredentialDocument, ExpertisePost, SessionSlot, TutorAvailability, Booking, Message, Payment
@@ -33,22 +34,32 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_avatar_url(self, obj):
         request = self.context.get('request')
-        if obj.avatar and request:
+        if not obj.avatar or not request:
+            return None
+        try:
             return request.build_absolute_uri(obj.avatar.url)
-        return None
+        except (OSError, ValueError, InvalidStorageError):
+            return None
 
     def get_credentials_document_url(self, obj):
         request = self.context.get('request')
-        if obj.credentials_document and request:
+        if not obj.credentials_document or not request:
+            return None
+        try:
             return request.build_absolute_uri(obj.credentials_document.url)
-        return None
+        except (OSError, ValueError, InvalidStorageError):
+            return None
 
     def get_credentials_documents(self, obj):
         request = self.context.get('request')
         docs = []
         try:
             for d in obj.credential_documents.all():
-                file_url = request.build_absolute_uri(d.file.url) if request else d.file.url
+                try:
+                    rel = d.file.url
+                    file_url = request.build_absolute_uri(rel) if request else rel
+                except (OSError, ValueError, InvalidStorageError):
+                    continue
                 docs.append({
                     'id': d.id,
                     'name': Path(d.file.name).name,
