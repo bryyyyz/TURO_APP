@@ -68,6 +68,10 @@ class SupabaseStorage(Storage):
         # signedURL is usually a path starting with /storage/v1/...
         if str(signed_path).startswith("http"):
             return signed_path
+        signed_path = str(signed_path)
+        # Some Supabase responses return "/object/sign/..." (without /storage/v1).
+        if signed_path.startswith("/object/"):
+            signed_path = f"/storage/v1{signed_path}"
         return f"{self.supabase_url}{signed_path}"
 
     def _save(self, name, content):
@@ -113,14 +117,9 @@ class SupabaseStorage(Storage):
         if not self.exists(key):
             return f"/media/{quote(key)}"
 
-        # Signed URLs work for both public and private buckets and avoid
-        # "Bucket not found" from the /public endpoint on private buckets.
-        try:
-            return self._signed_url(key)
-        except Exception:
-            if self.public:
-                return self._public_url(key)
-            raise
+        if self.public:
+            return self._public_url(key)
+        return self._signed_url(key)
 
     def get_available_name(self, name, max_length=None):
         # We'll handle collisions in _save
