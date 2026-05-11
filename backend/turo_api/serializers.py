@@ -32,21 +32,28 @@ class ProfileSerializer(serializers.ModelSerializer):
                   'barangay', 'municipality', 'province',
                   'email', 'username')
 
+    def _abs(self, request, url: str | None):
+        if not url:
+            return None
+        if str(url).startswith(('http://', 'https://')):
+            return str(url)
+        return request.build_absolute_uri(str(url)) if request else str(url)
+
     def get_avatar_url(self, obj):
         request = self.context.get('request')
-        if not obj.avatar or not request:
+        if not obj.avatar:
             return None
         try:
-            return request.build_absolute_uri(obj.avatar.url)
+            return self._abs(request, obj.avatar.url)
         except (OSError, ValueError, InvalidStorageError):
             return None
 
     def get_credentials_document_url(self, obj):
         request = self.context.get('request')
-        if not obj.credentials_document or not request:
+        if not obj.credentials_document:
             return None
         try:
-            return request.build_absolute_uri(obj.credentials_document.url)
+            return self._abs(request, obj.credentials_document.url)
         except (OSError, ValueError, InvalidStorageError):
             return None
 
@@ -56,8 +63,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         try:
             for d in obj.credential_documents.all():
                 try:
-                    rel = d.file.url
-                    file_url = request.build_absolute_uri(rel) if request else rel
+                    file_url = self._abs(request, d.file.url)
                 except (OSError, ValueError, InvalidStorageError):
                     continue
                 docs.append({
@@ -140,8 +146,14 @@ class ExpertisePostSerializer(serializers.ModelSerializer):
     def get_tutor_avatar_url(self, obj):
         request = self.context.get('request')
         p = self._tutor_profile_row(obj)
-        if p and p.avatar and request:
-            return request.build_absolute_uri(p.avatar.url)
+        if p and p.avatar:
+            try:
+                url = p.avatar.url
+            except (OSError, ValueError, InvalidStorageError):
+                return None
+            if str(url).startswith(('http://', 'https://')):
+                return str(url)
+            return request.build_absolute_uri(str(url)) if request else str(url)
         return None
 
     def get_tutor_bio(self, obj):
@@ -162,8 +174,14 @@ class ExpertisePostSerializer(serializers.ModelSerializer):
 
     def get_photo_url(self, obj):
         request = self.context.get('request')
-        if obj.photo and request:
-            return request.build_absolute_uri(obj.photo.url)
+        if obj.photo:
+            try:
+                url = obj.photo.url
+            except (OSError, ValueError, InvalidStorageError):
+                return None
+            if str(url).startswith(('http://', 'https://')):
+                return str(url)
+            return request.build_absolute_uri(str(url)) if request else str(url)
         return None
 
 class TutorAvailabilitySerializer(serializers.ModelSerializer):
