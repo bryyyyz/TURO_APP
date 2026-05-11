@@ -11,7 +11,7 @@
           <span v-if="notificationBadgeCount > 0" class="badge badge-count">{{ notificationBadgeLabel }}</span>
         </button>
         <div class="avatar-mobile" @click="menuOpen = true">
-          {{ profile?.first_name?.charAt(0) || 'J' }}{{ profile?.last_name?.charAt(0) || 'D' }}
+          {{ mobileProfileInitials }}
         </div>
       </div>
     </div>
@@ -42,7 +42,7 @@
           <div class="user-profile-widget" @click.stop="toggleLogoutMenu">
             <img :src="dashboardAvatarSrc" alt="Avatar" class="mini-avatar" @error="onAvatarError" />
             <div class="user-meta">
-              <span class="name">{{ profile?.first_name || 'Jayson' }} {{ profile?.last_name || 'Dela Cruz' }}</span>
+              <span class="name">{{ dashboardDisplayName }}</span>
               <span class="role">Student</span>
             </div>
             <TuroIcon name="chevronDown" :size="14" class="chevron sidebar-chevron-ic" />
@@ -234,9 +234,26 @@ const notificationBadgeLabel = computed(() =>
   notificationBadgeCount.value > 9 ? '9+' : String(notificationBadgeCount.value),
 );
 
+const DEFAULT_AVATAR_PLACEHOLDER =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect width='100%25' height='100%25' fill='%23e2e8f0'/><circle cx='40' cy='30' r='14' fill='%2394a3b8'/><rect x='18' y='50' width='44' height='20' rx='10' fill='%2394a3b8'/></svg>";
+
+const dashboardDisplayName = computed(() => {
+  const first = String(profile.value?.first_name || '').trim();
+  const last = String(profile.value?.last_name || '').trim();
+  const full = `${first} ${last}`.trim();
+  return full || 'No profile yet';
+});
+
+const mobileProfileInitials = computed(() => {
+  const first = String(profile.value?.first_name || '').trim();
+  const last = String(profile.value?.last_name || '').trim();
+  if (!first && !last) return 'NP';
+  return `${first.charAt(0) || ''}${last.charAt(0) || ''}`.toUpperCase() || 'NP';
+});
+
 const dashboardAvatarSrc = computed(() => {
-  if (avatarLoadFailed.value) return '/images/student_avatar.png';
-  return profile.value?.avatar_url || '/images/student_avatar.png';
+  if (avatarLoadFailed.value) return DEFAULT_AVATAR_PLACEHOLDER;
+  return profile.value?.avatar_url || DEFAULT_AVATAR_PLACEHOLDER;
 });
 
 function onAvatarError() {

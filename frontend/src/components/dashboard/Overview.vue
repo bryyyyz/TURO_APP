@@ -4,7 +4,7 @@
     <div class="welcome-header desktop-only">
       <div class="welcome-text">
         <div class="greeting">
-          <h1>Good morning, {{ profile?.first_name || 'Jayson' }}!</h1>
+          <h1>Good morning, {{ profile?.first_name || 'Tutor' }}!</h1>
           <span class="wave" aria-hidden="true">👋</span>
         </div>
         <p>Here's what's happening with your tutoring business today.</p>
@@ -21,7 +21,7 @@
     <!-- Mobile header -->
     <div class="mobile-greeting-row mobile-only">
       <div class="greeting-text">
-        <h2>Good morning, {{ profile?.first_name || 'Jayson' }}! <span class="wave" aria-hidden="true">👋</span></h2>
+        <h2>Good morning, {{ profile?.first_name || 'Tutor' }}! <span class="wave" aria-hidden="true">👋</span></h2>
         <p>What are we teaching today?</p>
       </div>
       <button type="button" class="mobile-action-btn" @click="emit('navigate-post')">

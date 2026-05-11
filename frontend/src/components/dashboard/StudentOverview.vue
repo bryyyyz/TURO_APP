@@ -4,7 +4,7 @@
     <div class="welcome-header desktop-only">
       <div class="welcome-text">
         <div class="greeting">
-          <h1>Hello, {{ profile?.first_name || 'Mary Rose' }}!</h1>
+          <h1>Hello, {{ profile?.first_name || 'Student' }}!</h1>
           <span class="wave" aria-hidden="true">👋</span>
         </div>
         <p>Ready to learn something new today?</p>
@@ -25,7 +25,7 @@
     <!-- Mobile greeting -->
     <div class="mobile-greeting-row mobile-only">
       <div class="greeting-text">
-        <h2>Hello, {{ profile?.first_name || 'Mary Rose' }}! <span class="wave" aria-hidden="true">👋</span></h2>
+        <h2>Hello, {{ profile?.first_name || 'Student' }}! <span class="wave" aria-hidden="true">👋</span></h2>
         <p>Ready to learn something new today?</p>
       </div>
       <button type="button" class="mobile-book-btn" @click="emit('navigate-discover')">
