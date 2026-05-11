@@ -80,16 +80,16 @@ export const sessionSlotService = {
 
 export const bookingService = {
     getBookings: () => api.get('bookings/'),
-    getStudentBookings: (studentId) => api.get('bookings/', { params: { student_id: studentId } }),
-    getTutorBookings: (tutorId) => api.get('bookings/', { params: { tutor_id: tutorId } }),
+    getStudentBookings: (studentId, params = {}) => api.get('bookings/', { params: { student_id: studentId, ...params } }),
+    getTutorBookings: (tutorId, params = {}) => api.get('bookings/', { params: { tutor_id: tutorId, ...params } }),
     createBooking: (data) => api.post('bookings/', data),
     updateBooking: (id, data) => api.patch(`bookings/${id}/`, data),
 };
 
 export const paymentService = {
     getPayments: () => api.get('payments/'),
-    getStudentPayments: (studentId) => api.get('payments/', { params: { student_id: studentId } }),
-    getTutorPayments: (tutorId) => api.get('payments/', { params: { tutor_id: tutorId } }),
+    getStudentPayments: (studentId, params = {}) => api.get('payments/', { params: { student_id: studentId, ...params } }),
+    getTutorPayments: (tutorId, params = {}) => api.get('payments/', { params: { tutor_id: tutorId, ...params } }),
     createPayment: (data) => api.post('payments/', data),
 };
 

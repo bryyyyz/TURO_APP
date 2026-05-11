@@ -156,11 +156,25 @@ class BookingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         student_id = self.request.query_params.get('student_id')
         tutor_id   = self.request.query_params.get('tutor_id')
+        limit = self.request.query_params.get('limit')
         if student_id:
-            return self.queryset.filter(student_id=student_id)
-        if tutor_id:
-            return self.queryset.filter(tutor_id=tutor_id)
-        return self.queryset
+            qs = self.queryset.filter(student_id=student_id)
+        elif tutor_id:
+            qs = self.queryset.filter(tutor_id=tutor_id)
+        else:
+            qs = self.queryset
+
+        # Show newest first so the first page/limited results are useful.
+        qs = qs.order_by('-created_at', '-id')
+
+        try:
+            limit_n = int(limit) if limit is not None else None
+        except (TypeError, ValueError):
+            limit_n = None
+        if limit_n and limit_n > 0:
+            qs = qs[:limit_n]
+
+        return qs
 
     def perform_create(self, serializer):
         booking = serializer.save()
@@ -183,11 +197,21 @@ class PaymentViewSet(viewsets.ModelViewSet):
         qs = self.queryset
         tutor_id   = self.request.query_params.get('tutor_id')
         student_id = self.request.query_params.get('student_id')
+        limit = self.request.query_params.get('limit')
         if tutor_id:
             qs = qs.filter(booking__tutor_id=tutor_id)
         if student_id:
             qs = qs.filter(booking__student_id=student_id)
-        return qs.order_by('-paid_at')
+        qs = qs.order_by('-paid_at', '-id')
+
+        try:
+            limit_n = int(limit) if limit is not None else None
+        except (TypeError, ValueError):
+            limit_n = None
+        if limit_n and limit_n > 0:
+            qs = qs[:limit_n]
+
+        return qs
 
 
 class AdminTierRequestsView(APIView):

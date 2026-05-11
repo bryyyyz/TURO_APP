@@ -194,6 +194,7 @@ const props = defineProps({ profile: Object });
 const { showToast } = useToast();
 
 const loading         = ref(false);
+const loadError       = ref('');
 const pendingRequests = ref([]);
 const earnings        = ref([]);
 
@@ -216,13 +217,31 @@ const formattedDate = computed(() =>
   new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 );
 
-watch(() => props.profile, async (p) => {
-  if (!p?.user) return;
+const tutorUserId = computed(() => {
+  const p = props.profile;
+  const v = p?.user ?? p?.user_id ?? p?.userId ?? p?.user?.id;
+  const n = typeof v === 'string' ? parseInt(v, 10) : v;
+  return Number.isFinite(n) ? n : null;
+});
+
+const withTimeout = (promise, ms = 15000) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms)),
+  ]);
+
+watch(() => props.profile, async () => {
+  loadError.value = '';
+  if (!tutorUserId.value) {
+    pendingRequests.value = [];
+    earnings.value = [];
+    return;
+  }
   loading.value = true;
   try {
     const [bRes, pRes] = await Promise.all([
-      bookingService.getTutorBookings(p.user),
-      paymentService.getTutorPayments(p.user),
+      withTimeout(bookingService.getTutorBookings(tutorUserId.value, { limit: 50 })),
+      withTimeout(paymentService.getTutorPayments(tutorUserId.value, { limit: 50 })),
     ]);
 
     const bookings = Array.isArray(bRes.data) ? bRes.data : (bRes.data?.results || []);
@@ -279,8 +298,42 @@ watch(() => props.profile, async (p) => {
     stats.value[3].delta    = 'Confirmed sessions';
     stats.value[3].progress = Math.min(bookings.length * 5, 100);
 
+    loading.value = false;
+
+    // Load full history in the background to compute accurate totals.
+    Promise.all([
+      withTimeout(bookingService.getTutorBookings(tutorUserId.value), 30000),
+      withTimeout(paymentService.getTutorPayments(tutorUserId.value), 30000),
+    ]).then(([bAllRes, pAllRes]) => {
+      const allBookings = Array.isArray(bAllRes.data) ? bAllRes.data : (bAllRes.data?.results || []);
+      const allPayments = Array.isArray(pAllRes.data) ? pAllRes.data : (pAllRes.data?.results || []);
+
+      const total = allPayments.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+      const now   = new Date();
+      const thisMonthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      const monthTotal   = allPayments
+        .filter(p => p.booking_date?.startsWith(thisMonthKey))
+        .reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+
+      stats.value[0].value    = '₱' + total.toFixed(2);
+      stats.value[0].delta    = allPayments.length + ' payment(s)';
+      stats.value[0].progress = Math.min(allPayments.length * 10, 100);
+
+      stats.value[1].value    = '₱' + monthTotal.toFixed(2);
+      stats.value[1].delta    = 'This month';
+      stats.value[1].progress = total > 0 ? Math.min((monthTotal / total) * 100, 100) : 0;
+
+      stats.value[3].value    = allBookings.filter(b => b.status === 'confirmed').length.toString();
+      stats.value[3].delta    = 'Confirmed sessions';
+      stats.value[3].progress = Math.min(allBookings.length * 5, 100);
+    }).catch((err) => {
+      console.warn('[Overview] background totals fetch failed:', err);
+    });
+
   } catch (error) {
     console.error('[Overview] fetch error:', error);
+    loadError.value = 'Failed to load overview data.';
+    showToast('Failed to load overview data', 'error');
   } finally {
     loading.value = false;
   }
