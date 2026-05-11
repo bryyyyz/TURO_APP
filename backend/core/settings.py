@@ -145,8 +145,14 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 STORAGES = {
+    # Railway filesystem is ephemeral; use Supabase Storage when configured.
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": env(
+            "DJANGO_DEFAULT_STORAGE_BACKEND",
+            default="core.supabase_storage.SupabaseStorage"
+            if env("SUPABASE_URL", default="") and env("SUPABASE_SERVICE_ROLE_KEY", default="")
+            else "django.core.files.storage.FileSystemStorage",
+        ),
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",

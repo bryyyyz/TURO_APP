@@ -6,3 +6,4 @@ Pillow
 psycopg[binary]>=3.1
 gunicorn
 whitenoise
+requests
