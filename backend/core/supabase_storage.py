@@ -113,9 +113,14 @@ class SupabaseStorage(Storage):
         if not self.exists(key):
             return f"/media/{quote(key)}"
 
-        if self.public:
-            return self._public_url(key)
-        return self._signed_url(key)
+        # Signed URLs work for both public and private buckets and avoid
+        # "Bucket not found" from the /public endpoint on private buckets.
+        try:
+            return self._signed_url(key)
+        except Exception:
+            if self.public:
+                return self._public_url(key)
+            raise
 
     def get_available_name(self, name, max_length=None):
         # We'll handle collisions in _save
