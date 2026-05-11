@@ -468,9 +468,45 @@ const avgProgress = computed(() => {
     white-space: nowrap;
   }
 
-  .student-stats { grid-template-columns: 1fr; gap: 1rem; }
-  .s-card { padding: 1.1rem 1.1rem 2.2rem; border-radius: 1.1rem; }
-  .s-info h2 { font-size: 1.8rem; }
+  /* Top 4 primary cards (match compact 2x2 design) */
+  .student-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .s-card {
+    padding: 14px;
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(15, 22, 41, 0.06);
+  }
+  .s-icon-wrap {
+    position: static;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f4f6fb;
+    margin-bottom: 8px;
+    box-shadow: none;
+  }
+  .s-icon-wrap svg { width: 17px; height: 17px; }
+  .s-info .s-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: #a0aec0;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .s-info h2 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1;
+    color: #0f172a;
+  }
+  .s-info .s-trend {
+    font-size: 10px;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+  .s-progress-container { display: none; }
 
   .list-card { padding: 1.25rem 1.1rem; border-radius: 1.1rem; }
   .card-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
