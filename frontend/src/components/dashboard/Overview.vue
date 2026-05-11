@@ -457,9 +457,20 @@ const handleDecline = async (id) => {
     display: flex; align-items: center; gap: 6px;
   }
 
+  /* Card system: match mobile design used in tutor Students list */
+  .stat-card,
+  .request-card-mobile,
+  .earning-item-mobile,
+  .mobile-performance-banner {
+    border: 1px solid #f1f5f9;
+    border-radius: 1rem;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+    background: #ffffff;
+  }
+
   /* Stats Grid Mobile */
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-  .stat-card { padding: 14px; border-radius: 16px; border: none; box-shadow: 0 2px 10px rgba(15,22,41,0.06); }
+  .stat-card { padding: 1rem 1.05rem; }
   .stat-icon-wrap { position: static; width: 32px; height: 32px; background: #f4f6fb; border-radius: 8px; margin-bottom: 8px; box-shadow: none; }
   .stat-turo-ic { width: 17px !important; height: 17px !important; }
   .stat-label { font-size: 9px; color: #a0aec0; letter-spacing: 0.5px; margin-bottom: 2px; text-transform: uppercase; font-weight: 700; }
@@ -478,10 +489,7 @@ const handleDecline = async (id) => {
   .horizontal-scroll::-webkit-scrollbar { display: none; }
 
   /* Request Card Mobile */
-  .request-card-mobile {
-    background: #ffffff; border-radius: 16px; padding: 14px; min-width: 260px;
-    box-shadow: 0 2px 10px rgba(15,22,41,0.06); border: 1px solid #f1f5f9;
-  }
+  .request-card-mobile { padding: 1rem 1.05rem; min-width: 260px; }
   .req-top { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
   .req-av { width: 38px; height: 38px; border-radius: 50%; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
   .req-meta strong { font-size: 14px; color: #0f172a; display: block; }
@@ -493,9 +501,14 @@ const handleDecline = async (id) => {
 
   /* Performance Banner Mobile */
   .mobile-performance-banner {
-    background: linear-gradient(135deg, #0f172a, #1a2f5e); border-radius: 18px;
-    padding: 16px; display: flex; align-items: center; gap: 14px; color: #fff;
-    box-shadow: 0 4px 16px rgba(15,22,41,0.15);
+    background: linear-gradient(135deg, #0f172a, #1a2f5e);
+    padding: 1rem 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
+    border-color: rgba(255, 255, 255, 0.12);
   }
   .perf-icon { font-size: 24px; }
   .perf-text { flex: 1; }
@@ -506,7 +519,7 @@ const handleDecline = async (id) => {
   .earnings-list-mobile { display: flex; flex-direction: column; gap: 10px; }
   .earning-item-mobile {
     display: flex; align-items: center; gap: 12px; background: #fff;
-    padding: 14px; border-radius: 16px; box-shadow: 0 2px 8px rgba(15,22,41,0.05);
+    padding: 1rem 1.05rem;
   }
   .item-icon { font-size: 20px; width: 40px; height: 40px; background: #fffbeb; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
   .item-info { flex: 1; }
