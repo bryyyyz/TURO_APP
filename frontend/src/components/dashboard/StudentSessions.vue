@@ -396,8 +396,192 @@ const recentActivities = computed(() =>
 .act-val { font-size: 0.9rem; font-weight: 800; color: #059669; }
 
 @media (max-width: 1024px) {
-  .session-card { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
-  .session-details { justify-content: flex-start; width: 100%; }
+  .session-card { flex-direction: column; align-items: stretch; gap: 1.25rem; }
+  .session-details {
+    justify-content: flex-start;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+  }
   .bottom-grid { grid-template-columns: 1fr; }
+}
+
+/* Phones and narrow tablets */
+@media (max-width: 768px) {
+  .student-sessions {
+    gap: 1.25rem;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .header-text h1 { font-size: 1.35rem; line-height: 1.2; }
+  .header-text p { font-size: 0.85rem; }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .header-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.65rem 1rem;
+    font-size: 0.8rem;
+    border-radius: 1rem;
+  }
+  .header-btn.date-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .status-tabs-row {
+    margin: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .status-tabs-row::-webkit-scrollbar { display: none; }
+  .status-tabs {
+    width: max-content;
+    min-width: 100%;
+    flex-wrap: nowrap;
+    padding: 0.35rem;
+    box-sizing: border-box;
+  }
+  .tab-btn {
+    padding: 0.55rem 1rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .pending-heading { font-size: 0.8rem; }
+  .pending-sub { font-size: 0.72rem; }
+
+  .sessions-list { gap: 1rem; }
+
+  .session-card {
+    padding: 1rem 1.1rem;
+    border-radius: 1.1rem;
+    align-items: stretch;
+  }
+
+  /* Grid: avatar | name+subject; then status under text */
+  .tutor-header {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    grid-template-rows: auto auto;
+    gap: 0.5rem 0.85rem;
+    align-items: start;
+    width: 100%;
+  }
+  .tutor-photo {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    width: 48px;
+    height: 48px;
+  }
+  .tutor-info {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .tutor-info h3 {
+    font-size: 0.92rem;
+    flex-wrap: wrap;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+  .tutor-info p {
+    font-size: 0.75rem;
+    word-break: break-word;
+  }
+  .status-tag {
+    grid-column: 2;
+    grid-row: 2;
+    margin-left: 0;
+    justify-self: start;
+    align-self: start;
+  }
+
+  .session-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    width: 100%;
+  }
+  .detail-item {
+    font-size: 0.8rem;
+    width: 100%;
+  }
+
+  .session-actions {
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+  .btn-join {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    text-align: center;
+  }
+
+  .bottom-grid { gap: 1.25rem; }
+
+  .section-card {
+    padding: 1.25rem 1.1rem;
+    border-radius: 1.1rem;
+  }
+  .section-card p { margin-bottom: 1.25rem; }
+
+  .card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+  .card-header .view-all { align-self: flex-start; }
+
+  .calendar-card {
+    padding: 1rem;
+    overflow-x: auto;
+  }
+  .cal-grid {
+    gap: 0.2rem;
+    min-width: 260px;
+  }
+  .cal-day-label { font-size: 0.62rem; padding-bottom: 0.35rem; }
+  .cal-day {
+    font-size: 0.72rem;
+    padding: 0.4rem 0.2rem;
+  }
+  .cal-title { font-size: 0.85rem; }
+
+  .slot-box { padding: 1.1rem; }
+  .slot-box h4 { font-size: 0.85rem; }
+
+  .activity-item {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
+  .act-info {
+    min-width: 0;
+    flex: 1 1 140px;
+  }
+  .act-info h4 { font-size: 0.82rem; word-break: break-word; }
+  .act-info p { font-size: 0.7rem; }
+  .act-val {
+    flex: 1 1 100%;
+    text-align: right;
+    font-size: 0.82rem;
+  }
 }
 </style>
