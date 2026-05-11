@@ -430,8 +430,15 @@ const handleLogout = async () => {
     await supabase.auth.signOut();
     showLogoutMenu.value = false;
     showLogoutModal.value = false;
+    menuOpen.value = false;
+    notificationsOpen.value = false;
+    user.value = null;
+    profile.value = null;
     showToast('Logged out successfully', 'success');
-    router.push('/login/student');
+    await router.replace('/login/student');
+    if (window.location.pathname.startsWith('/dashboard/')) {
+      window.location.href = '/login/student';
+    }
   } catch (e) {
     console.error('Logout failed:', e);
     showToast('Could not log out. Please try again.', 'error');

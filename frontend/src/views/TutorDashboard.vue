@@ -444,11 +444,20 @@ const handleLogout = async () => {
   if (loggingOut.value) return;
   loggingOut.value = true;
   try {
+    // Supabase signOut can occasionally leave a stale in-memory session until refresh.
+    // Clear local UI state and hard-redirect fallback to ensure the user is actually out.
     await supabase.auth.signOut();
     showLogoutMenu.value = false;
     showLogoutModal.value = false;
+    menuOpen.value = false;
+    notificationsOpen.value = false;
+    user.value = null;
+    profile.value = null;
     showToast('Logged out successfully', 'success');
-    router.push('/login/tutor');
+    await router.replace('/login/tutor');
+    if (window.location.pathname.startsWith('/dashboard/')) {
+      window.location.href = '/login/tutor';
+    }
   } catch (e) {
     console.error('Logout failed:', e);
     showToast('Could not log out. Please try again.', 'error');
