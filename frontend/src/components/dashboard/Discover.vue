@@ -234,7 +234,14 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg>
                 Booked
               </button>
-              <button type="button" v-else class="btn-book" @click="openBookingModal(tutor)">Book</button>
+              <button
+                type="button"
+                v-else
+                class="btn-book"
+                @click.stop="openBookingModal(tutor)"
+              >
+                Book
+              </button>
             </div>
           </div>
         </div>
@@ -1319,9 +1326,24 @@ watch([filterByLocation, () => props.profile?.municipality, () => props.profile?
   .results-bar { margin-top: 1rem; }
   .tutors-grid { grid-template-columns: 1fr; gap: 1rem; margin-top: 0.5rem; }
 
-  /* Listings keep the compact horizontal media-card layout on mobile */
-  .tutors-grid--listings .tutor-card { border-radius: 1.25rem; display: flex; flex-direction: row; height: 120px; }
-  .tutors-grid--listings .preview-area { width: 120px; height: 120px; flex-shrink: 0; border-radius: 0; }
+  /* Listings: horizontal thumb + body — do NOT fix card height or the Book
+     button and footer are clipped by overflow:hidden on .tutor-card */
+  .tutors-grid--listings .tutor-card {
+    border-radius: 1.25rem;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    min-height: 120px;
+    height: auto;
+    overflow: visible;
+  }
+  .tutors-grid--listings .preview-area {
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+    border-radius: 0;
+    align-self: flex-start;
+  }
   .tutors-grid--listings .preview-overlay,
   .tutors-grid--listings .time-badge,
   .tutors-grid--listings .btn-preview { display: none; }

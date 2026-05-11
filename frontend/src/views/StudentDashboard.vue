@@ -125,7 +125,7 @@
         <span class="mob-nav-ic-wrap"><TuroIcon name="search" :size="22" class="mob-nav-ic" /></span>
         <div class="nav-label">Discover</div>
       </div>
-      <div class="nav-center-btn" @click="currentTab = 'sessions'">
+      <div class="nav-center-btn" @click="currentTab = 'discover'">
         <div class="nav-fab"><TuroIcon name="calendar" :size="24" class="mob-fab-ic" /></div>
         <div class="nav-fab-label">Book</div>
       </div>
