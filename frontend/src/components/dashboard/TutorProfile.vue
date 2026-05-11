@@ -1134,12 +1134,13 @@ const activateTierUpgrade = async () => {
   .form-grid { grid-template-columns: 1fr; }
   .save-row { flex-direction: column; align-items: stretch; }
   .btn-save, .btn-cancel { justify-content: center; width: 100%; }
-  .tier-box { flex-direction: column; align-items: stretch; gap: 1rem; }
-  .simple-tier-box { gap: 1rem; align-items: stretch; }
-  .tier-status-row { width: 100%; }
+  .tier-box,
+  .simple-tier-box { flex-direction: column; align-items: stretch !important; gap: 1rem; }
+  .tier-status-row { width: 100%; flex-wrap: wrap; }
   .tier-field { width: 100%; box-sizing: border-box; }
-  .tier-textarea { max-width: 100%; box-sizing: border-box; }
+  .tier-textarea { max-width: 100%; box-sizing: border-box; width: 100%; }
   .elig-progress { width: 100%; box-sizing: border-box; }
+  .elig-row { flex-wrap: wrap; gap: 0.25rem; }
   .credential-card { width: 100%; box-sizing: border-box; padding: 0.75rem; }
   .credential-card-top { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
   .tier-actions { width: 100%; flex-direction: column; }
@@ -1148,6 +1149,9 @@ const activateTierUpgrade = async () => {
   .btn-simulate-payment,
   .btn-upgrade-after-pay { width: 100%; justify-content: center; }
   .credential-list { flex-direction: column; align-items: flex-start; }
+  .credential-link { white-space: normal; word-break: break-word; }
+  .selected-file { max-width: 100%; word-break: break-all; }
   .info-display-grid { grid-template-columns: 1fr; }
+  .tier-file-input { width: 100%; }
 }
 </style>
