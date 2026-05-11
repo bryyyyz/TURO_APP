@@ -1126,5 +1126,28 @@ const activateTierUpgrade = async () => {
 .btn-confirm-pay { border: 1px solid #0f172a; background: #0f172a; color: #fff; }
 .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
-@media (max-width: 768px) { .hero-content { padding: 1.5rem; gap: 1rem; } .avatar-circle { width: 64px; height: 64px; font-size: 1.4rem; } .hero-text h1 { font-size: 1.25rem; } .profile-section { padding: 1.25rem; } .form-grid { grid-template-columns: 1fr; } .save-row { flex-direction: column; align-items: stretch; } .btn-save, .btn-cancel { justify-content: center; width: 100%; } .tier-box { flex-direction: column; align-items: flex-start; } .btn-upgrade-tier { width: 100%; } }
+@media (max-width: 768px) {
+  .hero-content { padding: 1.5rem; gap: 1rem; }
+  .avatar-circle { width: 64px; height: 64px; font-size: 1.4rem; }
+  .hero-text h1 { font-size: 1.25rem; }
+  .profile-section { padding: 1.25rem; }
+  .form-grid { grid-template-columns: 1fr; }
+  .save-row { flex-direction: column; align-items: stretch; }
+  .btn-save, .btn-cancel { justify-content: center; width: 100%; }
+  .tier-box { flex-direction: column; align-items: stretch; gap: 1rem; }
+  .simple-tier-box { gap: 1rem; align-items: stretch; }
+  .tier-status-row { width: 100%; }
+  .tier-field { width: 100%; box-sizing: border-box; }
+  .tier-textarea { max-width: 100%; box-sizing: border-box; }
+  .elig-progress { width: 100%; box-sizing: border-box; }
+  .credential-card { width: 100%; box-sizing: border-box; padding: 0.75rem; }
+  .credential-card-top { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .tier-actions { width: 100%; flex-direction: column; }
+  .tier-actions button,
+  .btn-upgrade-tier,
+  .btn-simulate-payment,
+  .btn-upgrade-after-pay { width: 100%; justify-content: center; }
+  .credential-list { flex-direction: column; align-items: flex-start; }
+  .info-display-grid { grid-template-columns: 1fr; }
+}
 </style>
