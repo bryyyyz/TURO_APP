@@ -1,5 +1,28 @@
 import axios from 'axios';
 
+/** Human-readable message from axios / API validation errors */
+export function formatApiErrorMessage(err) {
+    if (!err) return 'Something went wrong.';
+    const d = err.response?.data;
+    if (typeof d === 'string') return d;
+    if (d && typeof d === 'object') {
+        if (typeof d.detail === 'string') return d.detail;
+        if (Array.isArray(d.detail)) {
+            return d.detail
+                .map((x) => (typeof x === 'string' ? x : x?.msg || JSON.stringify(x)))
+                .join(' ');
+        }
+        const msgs = [];
+        for (const [k, v] of Object.entries(d)) {
+            if (Array.isArray(v)) msgs.push(`${k}: ${v.join('; ')}`);
+            else if (v != null && typeof v === 'object') msgs.push(`${k}: ${JSON.stringify(v)}`);
+            else msgs.push(`${k}: ${v}`);
+        }
+        if (msgs.length) return msgs.join(' ');
+    }
+    return err.message || 'Something went wrong.';
+}
+
 const API_URL = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/').replace(/\/?$/, '/');
 
 const api = axios.create({

@@ -347,6 +347,31 @@ function fallbackNameFromSession(sessionUser, roleLabel = 'Student') {
   return { first_name: roleLabel, last_name: '' };
 }
 
+async function mergeSignupMetadataIntoDjangoProfile(sessionUser, role, row) {
+  if (!row?.id || !sessionUser?.user_metadata) return row;
+  const meta = sessionUser.user_metadata;
+  const patch = {};
+  const empty = (s) => !String(s ?? '').trim();
+  if (empty(row.first_name) && meta.first_name) patch.first_name = String(meta.first_name).trim();
+  if (empty(row.last_name) && meta.last_name) patch.last_name = String(meta.last_name).trim();
+  if (empty(row.middle_name) && meta.middle_name) patch.middle_name = String(meta.middle_name).trim();
+  if (empty(row.name_extension) && meta.name_extension) patch.name_extension = String(meta.name_extension).trim();
+  if (empty(row.barangay) && meta.barangay) patch.barangay = String(meta.barangay).trim();
+  if (empty(row.municipality) && meta.municipality) patch.municipality = String(meta.municipality).trim();
+  if (empty(row.province) && meta.province) patch.province = String(meta.province).trim();
+  if (Object.keys(patch).length === 0) return row;
+  try {
+    await profileService.updateProfile(row.id, patch);
+    const { data } = await profileService.getProfileByEmail(sessionUser.email, role);
+    const profiles = Array.isArray(data) ? data : (data.results || []);
+    const next = profiles?.[0];
+    if (next) return { ...next, email: next.email || sessionUser.email };
+  } catch (e) {
+    console.warn('Could not persist signup metadata to Django profile:', e);
+  }
+  return { ...row, ...patch };
+}
+
 onMounted(async () => {
   document.addEventListener('click', onGlobalClick);
   const { data: { session } } = await supabase.auth.getSession();
@@ -357,10 +382,12 @@ onMounted(async () => {
       const { data } = await profileService.getProfileByEmail(session.user.email, 'student');
       const profiles = Array.isArray(data) ? data : (data.results || []);
       if (profiles && profiles.length > 0) {
-        profile.value = {
+        let row = {
           ...profiles[0],
           email: profiles[0].email || session.user.email, // Use Django auth_user email
         };
+        row = await mergeSignupMetadataIntoDjangoProfile(session.user, 'student', row);
+        profile.value = row;
       } else {
         const fallback = fallbackNameFromSession(session.user, 'Student');
         profile.value = {

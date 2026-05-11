@@ -26,7 +26,7 @@ class Profile(models.Model):
     last_name = models.CharField(max_length=100, blank=True)
     middle_name = models.CharField(max_length=100, blank=True)
     name_extension = models.CharField(max_length=20, blank=True)
-    phone = models.CharField(max_length=15, blank=True)
+    phone = models.CharField(max_length=32, blank=True)
     bio = models.TextField(blank=True)
     achievements = models.TextField(blank=True)
     credentials_document = models.FileField(upload_to='tutor_credentials/', blank=True, null=True)

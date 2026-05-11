@@ -221,6 +221,17 @@ const handleSignup = async () => {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
+      options: {
+        data: {
+          first_name: form.firstName,
+          last_name: form.lastName,
+          middle_name: form.middleName || '',
+          name_extension: form.nameExtension || '',
+          barangay: form.barangay || '',
+          municipality: form.municipality || '',
+          province: form.province || '',
+        },
+      },
     });
     if (authError) throw authError;
     
@@ -236,7 +247,7 @@ const handleSignup = async () => {
       });
       if (profileError) throw profileError;
 
-      // Also sync to Django backend (fire-and-forget)
+      // Sync full name + location to Django (used by dashboards and My Profile)
       try {
         const { data } = await profileService.getProfileByEmail(form.email, selectedRole.value);
         const profiles = Array.isArray(data) ? data : (data.results || []);
@@ -249,11 +260,15 @@ const handleSignup = async () => {
             barangay: form.barangay,
             municipality: form.municipality,
             province: form.province,
-            role: selectedRole.value
+            role: selectedRole.value,
           });
         }
       } catch (err) {
-        console.error('Django sync failed (non-critical):', err);
+        console.error('Django profile sync failed:', err);
+        showToast(
+          'Account created, but we could not save your name and address to the server yet. They will fill in when you open My Profile, or try signing up again.',
+          'warning',
+        );
       }
       if (authData.session) {
         showToast('Account created successfully!', 'success');

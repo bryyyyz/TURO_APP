@@ -13,7 +13,7 @@
           <div class="role-badge">Student</div>
         </div>
         <div class="hero-text">
-          <h1>{{ form.first_name || 'Your' }} {{ form.last_name || 'Name' }}</h1>
+          <h1>{{ displayFullName || 'Your Name' }}</h1>
           <p class="hero-sub">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             {{ fullLocation || 'Location not set yet' }}
@@ -51,7 +51,7 @@
         <div v-if="!isEditing" class="info-display-grid">
           <div class="info-item">
             <label>Full Name</label>
-            <p>{{ form.first_name }} {{ form.last_name }}</p>
+            <p>{{ displayFullName || '—' }}</p>
           </div>
           <div class="info-item">
             <label>Email Address</label>
@@ -71,6 +71,14 @@
           <div class="form-group">
             <label for="s-last-name">Last Name</label>
             <input id="s-last-name" v-model="editForm.last_name" type="text" placeholder="Dela Cruz" />
+          </div>
+          <div class="form-group">
+            <label for="s-middle-name">Middle Name</label>
+            <input id="s-middle-name" v-model="editForm.middle_name" type="text" placeholder="Optional" />
+          </div>
+          <div class="form-group">
+            <label for="s-name-ext">Name Extension</label>
+            <input id="s-name-ext" v-model="editForm.name_extension" type="text" placeholder="Jr., III" />
           </div>
           <div class="form-group full-width">
             <label for="s-email">Email Address (Login Email)</label>
@@ -184,7 +192,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { supabase } from '../../supabase';
-import { profileService } from '../../services/api';
+import { profileService, formatApiErrorMessage } from '../../services/api';
 import { useToast } from '../../composables/useToast';
 
 const props = defineProps({ profile: Object });
@@ -198,6 +206,8 @@ const djangoProfileId = ref(null);
 const form = ref({
   first_name: '',
   last_name: '',
+  middle_name: '',
+  name_extension: '',
   email: '',
   phone: '',
   bio: '',
@@ -216,6 +226,16 @@ const initials = computed(() => {
   const f = form.value.first_name?.charAt(0) || '?';
   const l = form.value.last_name?.charAt(0) || '';
   return (f + l).toUpperCase();
+});
+
+const displayFullName = computed(() => {
+  const f = form.value.first_name?.trim() || '';
+  const m = form.value.middle_name?.trim() || '';
+  const l = form.value.last_name?.trim() || '';
+  const ext = form.value.name_extension?.trim() || '';
+  const core = [f, m, l].filter(Boolean).join(' ');
+  if (!core && !ext) return '';
+  return ext ? `${core} ${ext}`.trim() : core;
 });
 
 const avatarDisplayUrl = computed(() => {
@@ -266,6 +286,8 @@ const populateFromProp = (p) => {
   if (!p) return;
   form.value.first_name   = p.first_name   || '';
   form.value.last_name    = p.last_name    || '';
+  form.value.middle_name  = p.middle_name  || '';
+  form.value.name_extension = p.name_extension || '';
   form.value.email        = p.email        || '';
   form.value.phone        = p.phone        || '';
   form.value.bio          = p.bio          || '';
@@ -288,12 +310,14 @@ const loadDjangoProfileId = async () => {
     const profiles = Array.isArray(data) ? data : (data.results || []);
     if (profiles[0]) {
       djangoProfileId.value = profiles[0].id;
-      if (profiles[0].email) {
-        form.value.email = profiles[0].email;
-      }
-      if (profiles[0].avatar_url) {
-        form.value.avatar_url = profiles[0].avatar_url;
-      }
+      const row = profiles[0];
+      if (row.email) form.value.email = row.email;
+      if (row.avatar_url) form.value.avatar_url = row.avatar_url;
+      if (row.middle_name != null && row.middle_name !== '') form.value.middle_name = row.middle_name;
+      if (row.name_extension != null && row.name_extension !== '') form.value.name_extension = row.name_extension;
+      if (row.barangay) form.value.barangay = row.barangay;
+      if (row.municipality) form.value.municipality = row.municipality;
+      if (row.province) form.value.province = row.province;
     }
   } catch (e) {
     console.warn('Could not get Django profile ID:', e);
@@ -311,50 +335,57 @@ onMounted(() => {
 const saveProfile = async () => {
   saving.value = true;
   try {
-    // 1. Update Supabase auth metadata
-    await supabase.auth.updateUser({
-      data: { first_name: editForm.value.first_name, last_name: editForm.value.last_name }
-    });
+    const { data: { user }, error: userErr } = await supabase.auth.getUser();
+    if (userErr) throw userErr;
+    const email = user?.email;
+    if (!email) throw new Error('You must be signed in to save your profile.');
 
-    // 2. Update Supabase profiles table
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      await supabase.from('profiles').upsert({
-        id: session.user.id,
-        first_name: editForm.value.first_name,
-        last_name: editForm.value.last_name,
-      }, { onConflict: 'id' });
-    }
-
-    // 3. Update Django profile
     if (!djangoProfileId.value) {
-      // Fallback: try to re-fetch/create via the backend auto-creation logic
-      const { data } = await profileService.getProfileByEmail(session.user.email, 'student');
+      const { data } = await profileService.getProfileByEmail(email, 'student');
       const profiles = Array.isArray(data) ? data : (data.results || []);
       if (profiles[0]) djangoProfileId.value = profiles[0].id;
     }
+    if (!djangoProfileId.value) {
+      throw new Error('Could not load your profile from the server. Try refreshing the page.');
+    }
+
+    const payload = {
+      first_name: editForm.value.first_name ?? '',
+      last_name: editForm.value.last_name ?? '',
+      middle_name: editForm.value.middle_name ?? '',
+      name_extension: editForm.value.name_extension ?? '',
+      phone: editForm.value.phone ?? '',
+      bio: editForm.value.bio ?? '',
+      barangay: editForm.value.barangay ?? '',
+      municipality: editForm.value.municipality ?? '',
+      province: editForm.value.province ?? '',
+    };
 
     let newAvatarUrl = null;
-    if (djangoProfileId.value) {
-      const payload = {
-        first_name: editForm.value.first_name,
-        last_name: editForm.value.last_name,
-        phone: editForm.value.phone,
-        bio: editForm.value.bio,
-        barangay: editForm.value.barangay,
-        municipality: editForm.value.municipality,
-        province: editForm.value.province,
-      };
-      if (avatarFile.value) {
-        const fd = new FormData();
-        Object.entries(payload).forEach(([k, v]) => fd.append(k, v ?? ''));
-        fd.append('avatar', avatarFile.value);
-        const { data } = await profileService.updateProfile(djangoProfileId.value, fd);
-        newAvatarUrl = data?.avatar_url ?? null;
-      } else {
-        await profileService.updateProfile(djangoProfileId.value, payload);
-      }
+    if (avatarFile.value) {
+      const fd = new FormData();
+      Object.entries(payload).forEach(([k, v]) => fd.append(k, v ?? ''));
+      fd.append('avatar', avatarFile.value);
+      const { data } = await profileService.updateProfile(djangoProfileId.value, fd);
+      newAvatarUrl = data?.avatar_url ?? null;
+    } else {
+      await profileService.updateProfile(djangoProfileId.value, payload);
     }
+
+    const { error: metaErr } = await supabase.auth.updateUser({
+      data: { first_name: payload.first_name, last_name: payload.last_name },
+    });
+    if (metaErr) console.warn('Supabase auth metadata update:', metaErr.message);
+
+    const { error: sbErr } = await supabase.from('profiles').upsert(
+      {
+        id: user.id,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
+      },
+      { onConflict: 'id' },
+    );
+    if (sbErr) console.warn('Supabase profiles upsert:', sbErr.message);
 
     clearAvatarSelection();
     form.value = JSON.parse(JSON.stringify(editForm.value));
@@ -367,7 +398,7 @@ const saveProfile = async () => {
     showToast('Profile saved successfully! 🎉', 'success');
   } catch (err) {
     console.error('Save profile error:', err);
-    showToast('Failed to save profile. Please try again.', 'error');
+    showToast(formatApiErrorMessage(err), 'error');
   } finally {
     saving.value = false;
   }
