@@ -130,7 +130,7 @@
         <div class="tutor-row">
           <div class="tutor-row-left">
             <div class="avatar-lg" aria-hidden="true">
-              <img :src="group.thumbnail" :alt="group.displayName" />
+              <img :src="group.thumbnail" :alt="group.displayName" @error="onImageError" />
             </div>
             <div class="tutor-row-main">
               <div class="row-top">
@@ -188,7 +188,7 @@
         :class="['tutor-card', { 'is-booked': isBooked(tutor.id) }]"
       >
         <div class="preview-area">
-          <img :src="tutor.thumbnail" :alt="tutor.name" />
+          <img :src="tutor.thumbnail" :alt="tutor.name" @error="onImageError" />
           <div class="preview-overlay">
             <button type="button" class="btn-preview">Quick View</button>
           </div>
@@ -262,7 +262,7 @@
         
         <div class="modal-header">
           <div class="tutor-avatar-lg">
-             <img :src="selectedTutor?.thumbnail" />
+             <img :src="selectedTutor?.thumbnail" @error="onImageError" />
           </div>
           <div class="header-info">
             <h2>Book {{ selectedTutor?.name }}</h2>
@@ -409,7 +409,7 @@
 
         <div class="modal-header">
           <div class="tutor-avatar-lg">
-            <img :src="tutorProfileSelected?.thumbnail" :alt="tutorProfileSelected?.displayName" />
+            <img :src="tutorProfileSelected?.thumbnail" :alt="tutorProfileSelected?.displayName" @error="onImageError" />
           </div>
           <div class="header-info">
             <h2>{{ tutorProfileSelected?.displayName }}</h2>
@@ -472,6 +472,14 @@ const bookingLoading = ref(false);
 const slotsLoading = ref(false);
 const allSlots = ref([]);
 const selectedSlots = ref({});
+
+function onImageError(ev) {
+  const img = ev?.target;
+  if (!img) return;
+  const fallback = '/images/tutor_piano.png';
+  if (img.src && img.src.endsWith(fallback)) return;
+  img.src = fallback;
+}
 
 // ── Student's existing bookings (for booked-state detection) ──
 const studentBookedPostIds = ref(new Set());
