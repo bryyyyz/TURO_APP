@@ -106,11 +106,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabase } from '../supabase';
 import { useToast } from '../composables/useToast';
-import { profileService } from '../services/api';
+import { profileService, formatApiErrorMessage } from '../services/api';
 
 const router = useRouter();
 const { showToast } = useToast();
@@ -128,7 +128,8 @@ const features = [
 ];
 
 async function assertAccountRole(expectedRole) {
-  const { data } = await profileService.getProfileByEmail(username.value, expectedRole);
+  // Load by email only so the API does not filter out the real row (wrong ?role would return []).
+  const { data } = await profileService.getProfileByEmail(username.value);
   const profiles = Array.isArray(data) ? data : (data?.results || []);
   const profile = profiles[0];
   const actualRole = profile?.role || '';
@@ -144,6 +145,20 @@ async function assertAccountRole(expectedRole) {
     );
   }
 }
+
+onMounted(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user?.email) return;
+  try {
+    const { data } = await profileService.getProfileByEmail(session.user.email);
+    const profiles = Array.isArray(data) ? data : (data?.results || []);
+    const r = profiles[0]?.role;
+    if (r === 'student') router.replace('/dashboard/student');
+    else if (r === 'tutor') router.replace('/dashboard/tutor');
+  } catch {
+    /* stay on login */
+  }
+});
 
 const handleLogin = async () => {
   loading.value = true;
@@ -161,7 +176,7 @@ const handleLogin = async () => {
     router.push('/dashboard/student');
   } catch (error) {
     await supabase.auth.signOut();
-    showToast(error.message, 'error');
+    showToast(formatApiErrorMessage(error), 'error');
   } finally {
     loading.value = false;
   }

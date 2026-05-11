@@ -46,13 +46,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
                     username = f"{username}_{uuid.uuid4().hex[:4]}"
                 user = User.objects.create(username=username, email=email)
             
-            # Ensure profile exists; sync role when client passes role (tutor vs student dashboard)
-            user_profile, _created = Profile.objects.get_or_create(
+            # Ensure profile exists for this auth user. Never change role on GET — the
+            # login pages pass ?role=student|tutor only to filter; overwriting role here
+            # would let the wrong portal flip a tutor into a student (or vice versa).
+            Profile.objects.get_or_create(
                 user=user, defaults={'role': role or 'student'}
             )
-            if role and user_profile.role != role:
-                user_profile.role = role
-                user_profile.save(update_fields=['role'])
 
             qs = qs.filter(user__email=email)
 
