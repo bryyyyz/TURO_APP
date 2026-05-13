@@ -133,19 +133,18 @@
         </div>
 
         <div v-else class="form-grid">
-          <div class="form-group">
-            <label for="s-barangay">Barangay</label>
-            <input id="s-barangay" v-model="editForm.barangay" type="text" placeholder="e.g. Brgy. 123" />
-          </div>
-          <div class="form-group">
-            <label for="s-municipality">City / Municipality</label>
-            <input id="s-municipality" v-model="editForm.municipality" type="text" placeholder="e.g. Quezon City" />
-          </div>
+          <!-- Map Location Picker -->
           <div class="form-group full-width">
-            <label for="s-province">Province</label>
-            <input id="s-province" v-model="editForm.province" type="text" placeholder="e.g. Metro Manila" />
+            <label>Pin Your Location on the Map</label>
+            <LocationPicker
+              :barangay="editForm.barangay"
+              :municipality="editForm.municipality"
+              :province="editForm.province"
+              @update:barangay="editForm.barangay = $event"
+              @update:municipality="editForm.municipality = $event"
+              @update:province="editForm.province = $event"
+            />
           </div>
-          <span class="field-hint loc-hint">📍 Accurate location helps us find tutors closest to you.</span>
         </div>
       </section>
 
@@ -194,6 +193,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { supabase } from '../../supabase';
 import { profileService, formatApiErrorMessage } from '../../services/api';
 import { useToast } from '../../composables/useToast';
+import LocationPicker from './LocationPicker.vue';
 
 const props = defineProps({ profile: Object });
 const emit = defineEmits(['profile-updated']);
