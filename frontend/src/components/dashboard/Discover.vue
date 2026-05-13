@@ -412,18 +412,41 @@
       </div>
     </div>
 
-    <!-- Tutor Profile Modal (Achievements / Accomplishments) -->
+    <!-- Tutor Profile Modal -->
     <div v-if="showTutorProfileModal" class="modal-backdrop" @click.self="closeTutorProfile">
       <div class="modal-content tutor-profile-modal" @click.stop>
         <button class="close-btn" @click="closeTutorProfile">×</button>
 
-        <div class="modal-header">
-          <div class="tutor-avatar-lg">
-            <img :src="tutorProfileSelected?.thumbnail" :alt="tutorProfileSelected?.displayName" @error="onImageError" />
+        <!-- Hero Header -->
+        <div class="tpm-hero">
+          <div class="tpm-avatar-wrap">
+            <img :src="tutorProfileSelected?.thumbnail" :alt="tutorProfileSelected?.displayName" @error="onImageError" class="tpm-avatar" />
+            <span :class="['tpm-tier-badge', tierPillClass(tutorProfileSelected?.tier)]">{{ tierLabel(tutorProfileSelected?.tier) }}</span>
           </div>
-          <div class="header-info">
-            <h2>{{ tutorProfileSelected?.displayName }}</h2>
-            <p class="modal-sub" v-if="tutorProfileSelected?.location">{{ tutorProfileSelected.location }}</p>
+          <div class="tpm-hero-info">
+            <h2 class="tpm-name">{{ tutorProfileSelected?.displayName }}</h2>
+
+            <!-- Rating & Rate -->
+            <div class="tpm-meta-row">
+              <span class="tpm-rating">
+                <svg viewBox="0 0 24 24" fill="#f59e0b" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                4.9 <span class="tpm-rating-sub">(verified)</span>
+              </span>
+              <span v-if="tutorProfileSelected?.minRate" class="tpm-rate">
+                ₱{{ tutorProfileSelected.minRate }}<span class="tpm-rate-sub">/hr from</span>
+              </span>
+            </div>
+
+            <!-- Precise Location -->
+            <div v-if="tutorProfileSelected?.location" class="tpm-location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              {{ tutorProfileSelected.location }}
+            </div>
+
+            <!-- Subjects -->
+            <div v-if="tutorProfileSelected?.subjects?.length" class="tpm-subjects">
+              <span v-for="s in tutorProfileSelected.subjects.slice(0, 4)" :key="s" class="tpm-subject-tag">{{ s }}</span>
+            </div>
           </div>
         </div>
 
@@ -675,11 +698,14 @@ const tutorProfileSelected = ref(null);
 
 function openTutorProfile(group) {
   tutorProfileSelected.value = group ? {
-    tutor_id: group.tutor_id,
-    displayName: group.displayName,
-    thumbnail: group.thumbnail,
-    location: group.location,
-    bio: group.bio,
+    tutor_id:     group.tutor_id,
+    displayName:  group.displayName,
+    thumbnail:    group.thumbnail,
+    location:     group.location,
+    tier:         group.tier || 'basic',
+    minRate:      group.minRate,
+    subjects:     [...new Set(group.posts.map(p => p.subject).filter(Boolean))],
+    bio:          group.bio,
     achievements: group.achievements,
   } : null;
   showTutorProfileModal.value = true;
@@ -1189,6 +1215,76 @@ watch([filterByLocation, () => props.profile?.municipality, () => props.profile?
 .mini-label { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #94a3b8; margin-bottom: 0.5rem; }
 .mini-text { margin: 0; font-size: 0.92rem; color: #334155; line-height: 1.55; }
 .prewrap { white-space: pre-wrap; }
+
+/* ── Tutor Profile Modal Hero ── */
+.tpm-hero {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1.75rem 1.75rem 1.25rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  border-radius: 1.5rem 1.5rem 0 0;
+  align-items: flex-start;
+}
+.tpm-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.tpm-avatar {
+  width: 80px; height: 80px;
+  border-radius: 1.25rem;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,0.2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  display: block;
+}
+.tpm-tier-badge {
+  position: absolute;
+  bottom: -8px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem; font-weight: 900;
+  padding: 0.18rem 0.55rem;
+  border-radius: 2rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.tpm-hero-info { flex: 1; min-width: 0; }
+.tpm-name {
+  font-size: 1.2rem; font-weight: 900;
+  color: #fff; margin: 0 0 0.5rem;
+  line-height: 1.2;
+}
+.tpm-meta-row {
+  display: flex; align-items: center; gap: 0.85rem;
+  flex-wrap: wrap; margin-bottom: 0.5rem;
+}
+.tpm-rating {
+  display: flex; align-items: center; gap: 0.3rem;
+  font-size: 0.82rem; font-weight: 800; color: #fbbf24;
+}
+.tpm-rating-sub { color: rgba(255,255,255,0.45); font-weight: 600; font-size: 0.75rem; }
+.tpm-rate {
+  font-size: 0.85rem; font-weight: 900; color: #ffffff;
+}
+.tpm-rate-sub { font-weight: 600; color: rgba(255,255,255,0.55); font-size: 0.75rem; }
+.tpm-location {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.8rem; font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 0.6rem;
+}
+.tpm-location svg { width: 14px; height: 14px; flex-shrink: 0; color: #60a5fa; }
+.tpm-subjects {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+.tpm-subject-tag {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.72rem; font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 2rem;
+  border: 1px solid rgba(255,255,255,0.15);
+}
 
 /* Tutor list (available tutors) redesign */
 .tutors-grid--summary .tutor-card { border-radius: 1.25rem; }
