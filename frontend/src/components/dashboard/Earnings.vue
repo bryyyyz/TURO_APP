@@ -143,8 +143,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { paymentService } from '../../services/api';
+import { REFRESH_TRIGGER } from '../../symbols/injectionKeys';
 
 const props = defineProps({ profile: Object });
 
@@ -153,8 +154,10 @@ const goldPoints = [{x:50,y:160},{x:150,y:140},{x:250,y:150},{x:350,y:135},{x:45
 
 const payments = ref([]);
 const loading  = ref(false);
+const refreshTrigger = inject(REFRESH_TRIGGER, null);
 
-watch(() => props.profile, async (p) => {
+async function fetchEarnings() {
+  const p = props.profile;
   if (p?.user) {
     loading.value = true;
     try {
@@ -166,7 +169,10 @@ watch(() => props.profile, async (p) => {
       loading.value = false;
     }
   }
-}, { immediate: true });
+}
+
+watch(() => props.profile, fetchEarnings, { immediate: true });
+watch(refreshTrigger, fetchEarnings);
 
 const totalEarnings = computed(() =>
   payments.value.reduce((s, p) => s + parseFloat(p.amount || 0), 0).toFixed(2)

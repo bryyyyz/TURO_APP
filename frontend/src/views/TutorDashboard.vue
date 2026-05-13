@@ -103,12 +103,15 @@
 
       <!-- Active View Content -->
       <div class="view-viewport">
-        <component
-          :is="activeComponent"
-          :profile="profile"
-          @profile-updated="onProfileUpdated"
-          @navigate-post="currentTab = 'post'"
-        />
+        <keep-alive>
+          <component
+            :is="activeComponent"
+            :profile="profile"
+            :key="currentTab"
+            @profile-updated="onProfileUpdated"
+            @navigate-post="currentTab = 'post'"
+          />
+        </keep-alive>
       </div>
       
       <!-- Footer (Desktop Only) -->
@@ -209,6 +212,7 @@ import { useRouter } from 'vue-router';
 import { supabase } from '../supabase';
 import { useToast } from '../composables/useToast';
 import { profileService, bookingService, paymentService } from '../services/api';
+import { REFRESH_TRIGGER } from '../symbols/injectionKeys';
 
 // Tab Components
 import Overview from '../components/dashboard/Overview.vue';
@@ -238,6 +242,8 @@ const showLogoutMenu = ref(false);
 const showLogoutModal = ref(false);
 const loggingOut = ref(false);
 const avatarLoadFailed = ref(false);
+const refreshTrigger = ref(0);
+const realtimeChannel = ref(null);
 
 const notificationBadgeLabel = computed(() =>
   notificationBadgeCount.value > 9 ? '9+' : String(notificationBadgeCount.value),
@@ -322,11 +328,56 @@ function openNotificationsPanel() {
 }
 
 provide(OPEN_NOTIFICATIONS, openNotificationsPanel);
+provide(REFRESH_TRIGGER, refreshTrigger);
+
+function setupRealtime() {
+  const tid = profile.value?.user;
+  if (!tid || realtimeChannel.value) return;
+
+  console.log('[TutorDashboard] Setting up realtime for user:', tid);
+
+  realtimeChannel.value = supabase
+    .channel(`tutor-realtime-${tid}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'bookings',
+        filter: `tutor_id=eq.${tid}`
+      },
+      (payload) => {
+        console.log('[Realtime] Booking change:', payload);
+        refreshTrigger.value++;
+        loadTutorActivityFeed(false);
+        showToast('Booking updated!', 'info');
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'payments',
+        // Note: filter might need adjustment if payment table doesn't have a direct tutor_id column
+        // filter: `tutor_id=eq.${tid}` 
+      },
+      (payload) => {
+        console.log('[Realtime] Payment change:', payload);
+        refreshTrigger.value++;
+        loadTutorActivityFeed(false);
+      }
+    )
+    .subscribe();
+}
 
 watch(
   () => profile.value?.user,
   (uid) => {
-    if (uid) loadTutorActivityFeed(false);
+    if (uid) {
+      loadTutorActivityFeed(false);
+      setupRealtime();
+    }
   },
 );
 
@@ -455,6 +506,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('click', onGlobalClick);
+  if (realtimeChannel.value) {
+    supabase.removeChannel(realtimeChannel.value);
+  }
 });
 
 const handleLogout = async () => {

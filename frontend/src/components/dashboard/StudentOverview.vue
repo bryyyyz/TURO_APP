@@ -268,12 +268,14 @@
 import { ref, computed, watch, inject } from 'vue';
 import { TuroIcon } from '../icons';
 import { bookingService, paymentService } from '../../services/api';
-import { OPEN_NOTIFICATIONS } from '../../symbols/injectionKeys';
+import { OPEN_NOTIFICATIONS, REFRESH_TRIGGER } from '../../symbols/injectionKeys';
 
 const props = defineProps({ profile: Object });
 const emit = defineEmits(['navigate-discover']);
 
 const openNotifications = inject(OPEN_NOTIFICATIONS, null);
+const refreshTrigger = inject(REFRESH_TRIGGER, null);
+
 function openActivityPanel() {
   openNotifications?.();
 }
@@ -334,7 +336,8 @@ const achievements   = ref([
   { id: 4, title: '20 Sessions',   status: 'Locked', earned: false, icon: 'award', color: '#f6fdf9' },
 ]);
 
-watch(() => props.profile, async (p) => {
+async function fetchStudentDashboardData() {
+  const p = props.profile;
   if (!p?.user) return;
   loading.value = true;
   try {
@@ -445,7 +448,10 @@ watch(() => props.profile, async (p) => {
   } finally {
     loading.value = false;
   }
-}, { immediate: true });
+}
+
+watch(() => props.profile, fetchStudentDashboardData, { immediate: true });
+watch(refreshTrigger, fetchStudentDashboardData);
 
 const filteredActivity = computed(() =>
   chartRange.value === '3m' ? activityData.value.slice(-3) : activityData.value

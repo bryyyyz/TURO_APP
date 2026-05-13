@@ -144,8 +144,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import { sessionSlotService, bookingService } from '../../services/api';
+import { REFRESH_TRIGGER } from '../../symbols/injectionKeys';
 
 const props = defineProps({ profile: Object });
 
@@ -159,6 +160,7 @@ const loading = ref(true);
 const selectedDate = ref(null);
 const currentTutorId = ref(null);
 const markingBookingId = ref(null);
+const refreshTrigger = inject(REFRESH_TRIGGER, null);
 
 watch(() => props.profile, async (p) => {
   if (p && p.user) {
@@ -166,6 +168,13 @@ watch(() => props.profile, async (p) => {
     await fetchData();
   }
 }, { immediate: true });
+
+watch(refreshTrigger, async () => {
+  if (currentTutorId.value) {
+    console.log('[Schedule] Refreshing due to real-time update');
+    await fetchData();
+  }
+});
 
 async function fetchData() {
   if (!currentTutorId.value) return;
