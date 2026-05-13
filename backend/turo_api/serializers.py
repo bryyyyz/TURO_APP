@@ -205,6 +205,8 @@ class BookingSerializer(serializers.ModelSerializer):
     student_barangay     = serializers.SerializerMethodField()
     student_municipality = serializers.SerializerMethodField()
     student_province     = serializers.SerializerMethodField()
+    tutor_avatar_url     = serializers.SerializerMethodField()
+    tutor_tier           = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -212,7 +214,7 @@ class BookingSerializer(serializers.ModelSerializer):
                   'session_number', 'date', 'start_time', 'end_time', 'status',
                   'student_name', 'tutor_name', 'post_title', 'post_subject', 'created_at',
                   'student_barangay', 'student_municipality', 'student_province',
-                  'student_avatar_url')
+                  'student_avatar_url', 'tutor_avatar_url', 'tutor_tier')
 
     def _student_profile(self, obj):
         try:
@@ -251,6 +253,26 @@ class BookingSerializer(serializers.ModelSerializer):
         if p and p.avatar and request:
             return request.build_absolute_uri(p.avatar.url)
         return None
+
+    def get_tutor_avatar_url(self, obj):
+        request = self.context.get('request')
+        try:
+            p = obj.tutor.profile
+        except Profile.DoesNotExist:
+            return None
+        if p and p.avatar and request:
+            try:
+                return request.build_absolute_uri(p.avatar.url)
+            except (OSError, ValueError):
+                return None
+        return None
+
+    def get_tutor_tier(self, obj):
+        try:
+            p = obj.tutor.profile
+            return p.tutor_tier or 'basic'
+        except Profile.DoesNotExist:
+            return 'basic'
 
     def validate(self, attrs):
         inst = self.instance

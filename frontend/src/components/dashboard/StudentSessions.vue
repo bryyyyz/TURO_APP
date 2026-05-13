@@ -56,9 +56,15 @@
       <p v-if="!loading && displayedSessions.length === 0" class="empty-sessions-msg">{{ emptyTabMessage }}</p>
       <div class="session-card" v-for="session in displayedSessions" :key="session.id">
         <div class="tutor-header">
-          <img :src="session.tutorPhoto" alt="Tutor" class="tutor-photo" />
+          <div class="tutor-photo-wrap">
+            <img :src="session.tutorPhoto" alt="Tutor" class="tutor-photo" @error="onImgError" />
+          </div>
           <div class="tutor-info">
-            <h3>{{ session.tutorName }} <svg v-if="session.verified" viewBox="0 0 24 24" fill="#3b82f6" class="verified-icon"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></h3>
+            <h3>
+              {{ session.tutorName }}
+              <svg v-if="session.verified" viewBox="0 0 24 24" fill="#3b82f6" class="verified-icon"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span :class="['session-tier-badge', tierPillClass(session.tier)]">{{ tierLabel(session.tier) }}</span>
+            </h3>
             <p>{{ session.subject }}</p>
           </div>
           <span class="status-tag" :class="session.statusTagClass">{{ session.statusTag }}</span>
@@ -217,7 +223,8 @@ function mapBookingCard(b, options = {}) {
     time: start,
     timeRange,
     verified: status === 'confirmed' || status === 'completed',
-    tutorPhoto: '/images/tutor_avatar.png',
+    tutorPhoto: b.tutor_avatar_url || '/images/tutor_avatar.png',
+    tier: b.tutor_tier || 'basic',
     status,
     statusTag,
     statusTagClass,
@@ -288,10 +295,26 @@ const recentActivities = computed(() =>
       title: `${b.post_subject || b.post_title || 'Session'} — completed`,
       subtitle: `${b.tutor_name || 'Tutor'} · ${new Date(b.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
       value: 'Success',
-      icon: '/images/tutor_avatar.png',
+      icon: b.tutor_avatar_url || '/images/tutor_avatar.png',
       color: '#059669',
     })),
 );
+
+function onImgError(e) {
+  if (e.target && !e.target.src.endsWith('/images/tutor_avatar.png'))
+    e.target.src = '/images/tutor_avatar.png';
+}
+
+function tierLabel(tier) {
+  if (tier === 'pro')  return '⭐⭐ Pro';
+  if (tier === 'plus') return '⭐ Plus';
+  return '';
+}
+function tierPillClass(tier) {
+  if (tier === 'pro')  return 'tier-pro';
+  if (tier === 'plus') return 'tier-plus';
+  return 'tier-hidden';
+}
 </script>
 
 <style scoped>
@@ -350,7 +373,15 @@ const recentActivities = computed(() =>
 .session-card { background: #ffffff; border: 1px solid #f1f5f9; border-radius: 1.5rem; padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
 
 .tutor-header { display: flex; align-items: center; gap: 1.25rem; flex: 1; }
-.tutor-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.tutor-photo-wrap { flex-shrink: 0; }
+.tutor-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.10); }
+.session-tier-badge {
+  display: inline-block; font-size: 0.62rem; font-weight: 800;
+  padding: 0.15rem 0.5rem; border-radius: 2rem; vertical-align: middle; margin-left: 0.4rem;
+}
+.tier-pro  { background: linear-gradient(135deg,#1e3a8a,#3b82f6); color:#fff; }
+.tier-plus { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.tier-hidden { display: none; }
 .tutor-info h3 { font-size: 1rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.4rem; }
 .verified-icon { width: 16px; height: 16px; }
 .tutor-info p { font-size: 0.8rem; color: #64748b; font-weight: 700; }

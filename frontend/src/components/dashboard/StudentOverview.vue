@@ -115,7 +115,9 @@
         </div>
         <div class="horizontal-scroll tutors-scroll">
           <div class="tutor-card-mini" v-for="t in tutors" :key="t.id">
-            <div class="tutor-av" :style="{ background: t.color || 'var(--color-primary-dark)' }">{{ t.name.charAt(0) }}</div>
+            <div class="tutor-av-wrap">
+              <img :src="t.avatar" alt="" class="tutor-av-img" @error="e => e.target.src='/images/tutor_avatar.png'" />
+            </div>
             <div class="tutor-name">{{ t.name }}</div>
             <div class="tutor-subject">{{ t.subject }}</div>
             <div class="tutor-stars"><TuroIcon name="star" :size="12" filled class="mini-star" /> {{ t.rating }}</div>
@@ -188,7 +190,10 @@
           </div>
           <div class="tutor-list">
             <div class="tutor-item" v-for="tutor in tutors" :key="tutor.id">
-              <img src="/images/student_avatar.png" alt="Avatar" class="t-avatar" />
+              <div class="t-avatar-wrap">
+                <img :src="tutor.avatar" :alt="tutor.name" class="t-avatar" @error="e => e.target.src='/images/tutor_avatar.png'" />
+                <span v-if="tutor.tier !== 'basic'" :class="['t-tier-dot', tutor.tier === 'pro' ? 'dot-pro' : 'dot-plus']" :title="tutor.tier"></span>
+              </div>
               <div class="tutor-info">
                 <h4>{{ tutor.name }}</h4>
                 <p>{{ tutor.subject }}</p>
@@ -385,6 +390,8 @@ async function fetchStudentDashboardData() {
         subject: b?.post_subject || b?.post_title || 'Session',
         rating: '4.9',
         sessions: sessionCount,
+        avatar: b?.tutor_avatar_url || '/images/tutor_avatar.png',
+        tier: b?.tutor_tier || 'basic',
       };
     });
 
@@ -572,7 +579,11 @@ const progress = computed(() => {
 /* Tutor List Desktop */
 .tutor-list { display: flex; flex-direction: column; gap: 1rem; }
 .tutor-item { display: flex; align-items: center; padding: 1.25rem; background: #fbfcfd; border-radius: 1.25rem; border: 1px solid #f1f5f9; }
-.t-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-right: 1.25rem; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.t-avatar-wrap { position: relative; margin-right: 1.25rem; flex-shrink: 0; }
+.t-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.t-tier-dot { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; }
+.dot-pro  { background: #3b82f6; }
+.dot-plus { background: #f59e0b; }
 .tutor-info { flex: 1; }
 .tutor-info h4 { font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem; }
 .tutor-info p { font-size: 0.8rem; color: #64748b; font-weight: 600; }
@@ -669,9 +680,10 @@ const progress = computed(() => {
   .horizontal-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0; scrollbar-width: none; }
   .horizontal-scroll::-webkit-scrollbar { display: none; }
 
-  /* Tutor Card Mini */
+  /* Tutor Card Mini — real avatar */
   .tutor-card-mini { background: #ffffff; border-radius: 18px; padding: 16px; min-width: 150px; box-shadow: 0 2px 12px rgba(15,22,41,0.08); text-align: center; }
-  .tutor-av { width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 18px; font-weight: 800; color: #ffffff; }
+  .tutor-av-wrap { width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 10px; overflow: hidden; border: 2px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .tutor-av-img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .tutor-name { font-family: var(--font-display); font-size: 13px; font-weight: 800; color: #0f172a; }
   .tutor-subject { font-size: 11px; color: #a0aec0; margin: 2px 0; font-weight: 600; }
   .tutor-stars { font-size: 11px; color: #f59e0b; font-weight: 700; }
