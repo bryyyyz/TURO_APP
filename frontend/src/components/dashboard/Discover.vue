@@ -9,26 +9,32 @@
       </div>
     </div>
 
-    <!-- ── Location Filter Banner ── -->
-    <div class="location-banner" v-if="profile?.municipality || profile?.province">
+    <!-- ── Location Scope Banner ── -->
+    <div class="location-banner" v-if="profile?.province">
       <div class="loc-left">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        <span v-if="profile?.province">
-          Showing tutors in the same province: <strong>{{ profile.province }}</strong>
-        </span>
-        <span v-else>
-          Add your <strong>province</strong> in My Profile to filter tutors — currently showing every tutor while Location is on.
-        </span>
+        <span>Your location: <strong>{{ [profile.barangay, profile.municipality, profile.province].filter(Boolean).join(', ') }}</strong></span>
       </div>
-      <div class="loc-right">
-        <button type="button" class="loc-toggle" :class="{ active: filterByLocation }" @click="filterByLocation = !filterByLocation">
-          {{ filterByLocation ? '📍 Same province' : '🌐 All provinces' }}
-        </button>
+      <div class="loc-scope-group">
+        <button type="button"
+          :class="['scope-pill', { active: locationScope === 'municipality' }]"
+          @click="locationScope = 'municipality'"
+          :disabled="!profile.municipality"
+          :title="profile.municipality ? 'Same city/municipality' : 'Set your municipality in My Profile'"
+        >📍 Same City</button>
+        <button type="button"
+          :class="['scope-pill', { active: locationScope === 'province' }]"
+          @click="locationScope = 'province'"
+        >🏙️ Same Province</button>
+        <button type="button"
+          :class="['scope-pill', { active: locationScope === 'all' }]"
+          @click="locationScope = 'all'"
+        >🌐 All</button>
       </div>
     </div>
     <div class="location-banner warn" v-else>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span>Set your <strong>province</strong> in <strong>My Profile</strong> to see tutors in your province</span>
+      <span>Set your <strong>location</strong> in <strong>My Profile</strong> to filter tutors near you</span>
     </div>
 
     <!-- ── Browse mode: tutors (grouped) vs every listing ── -->
@@ -458,7 +464,16 @@ const activeCategory = ref('All');
 /** Raw API posts (published only), ordered newest first */
 const rawPosts = ref([]);
 const loading = ref(true);
-const filterByLocation = ref(true);
+
+/**
+ * Location scope:
+ *  'municipality' — strict same city/municipality match
+ *  'province'     — strict same province match
+ *  'all'          — no location filter
+ */
+const locationScope = ref('province');
+// keep filterByLocation in sync so existing code that reads it still works
+const filterByLocation = computed(() => locationScope.value !== 'all');
 
 /** tutors = grouped nearby/all tutors; listings = flat feed */
 const browseMode = ref('tutors');
@@ -535,42 +550,39 @@ function postLocationLine(post) {
 function normLoc(s) {
   return String(s || '')
     .toLowerCase()
-    .replace(/,/g, ' ')
-    .replace(/-/g, ' ')
+    .replace(/[-,]/g, ' ')
     .replace(/\s+/g, ' ')
+    .replace(/\bcity\b/g, '')
+    .replace(/\bprovince\b/g, '')
+    .replace(/\bmunicipality\b/g, '')
     .trim();
 }
 
-/** Significant tokens (e.g. "Cebu Province" → "cebu", "province") */
-function locationTokens(s) {
-  return normLoc(s)
-    .split(' ')
-    .map((t) => t.trim())
-    .filter((t) => t.length >= 3 && t !== 'city' && t !== 'province');
+/**
+ * Strict location match: checks whether the tutor's address field
+ * contains or is contained by the student's field (handles cases like
+ * "Cebu" vs "Cebu Province" or "Cebu City" vs "Cebu").
+ */
+function strictMatch(a, b) {
+  if (!a || !b) return false;
+  const na = normLoc(a);
+  const nb = normLoc(b);
+  return na === nb || na.includes(nb) || nb.includes(na);
 }
 
-/**
- * Same-region: tutor province OR municipality vs student province.
- * Many tutors only fill city/municipality; student may type "Cebu Province" while tutor has "Cebu".
- */
 function postMatchesNearby(post) {
-  if (!filterByLocation.value) return true;
-  const sp = normLoc(props.profile?.province);
-  if (!sp) return true;
+  if (locationScope.value === 'all') return true;
 
-  const tp = normLoc(post.tutor_province);
-  const tm = normLoc(post.tutor_municipality);
-  const tutorBlob = `${tp} ${tm}`.trim();
-  if (!tutorBlob) return false;
-
-  if (tp && (tp.includes(sp) || sp.includes(tp))) return true;
-  if (tm && (tm.includes(sp) || sp.includes(tm))) return true;
-
-  const stoks = locationTokens(props.profile?.province);
-  for (const tok of stoks) {
-    if (tutorBlob.includes(tok)) return true;
+  if (locationScope.value === 'municipality') {
+    const sm = props.profile?.municipality;
+    if (!sm) return false; // no student municipality — don't show anyone
+    return strictMatch(post.tutor_municipality, sm);
   }
-  return false;
+
+  // 'province'
+  const sp = props.profile?.province;
+  if (!sp) return false;
+  return strictMatch(post.tutor_province, sp);
 }
 
 function postMatchesCategory(post) {
@@ -659,15 +671,19 @@ function closeTutorProfile() {
   tutorProfileSelected.value = null;
 }
 
-const tutorsBrowseLabel = computed(() =>
-  filterByLocation.value && props.profile?.province
-    ? 'Tutors in your province'
-    : 'All tutors',
-);
+const tutorsBrowseLabel = computed(() => {
+  if (locationScope.value === 'municipality' && props.profile?.municipality)
+    return `Tutors in ${props.profile.municipality}`;
+  if (locationScope.value === 'province' && props.profile?.province)
+    return `Tutors in ${props.profile.province}`;
+  return 'All tutors';
+});
 
-const tutorsBrowseHint = computed(() =>
-  filterByLocation.value && props.profile?.province ? '(same province)' : '',
-);
+const tutorsBrowseHint = computed(() => {
+  if (locationScope.value === 'municipality') return '(same city/municipality)';
+  if (locationScope.value === 'province') return '(same province)';
+  return '';
+});
 
 function mapPostToListingCard(post, { preferListingPhoto = false } = {}) {
   const thumb = preferListingPhoto
@@ -764,10 +780,8 @@ const loadPosts = async () => {
 };
 
 watch(
-  () => [filterByLocation.value, String(props.profile?.province || '').trim(), props.profile?.user],
-  () => {
-    loadPosts();
-  },
+  () => [locationScope.value, props.profile?.province, props.profile?.municipality, props.profile?.user],
+  () => { loadPosts(); },
   { immediate: true },
 );
 
@@ -935,8 +949,9 @@ watch([filterByLocation, () => props.profile?.municipality, () => props.profile?
 .location-banner svg { width: 16px; height: 16px; flex-shrink: 0; }
 .loc-left { display: flex; align-items: center; gap: 0.5rem; }
 .loc-right { flex-shrink: 0; }
-.loc-toggle {
-  padding: 0.35rem 0.9rem;
+.loc-scope-group { display: flex; gap: 0.4rem; flex-shrink: 0; flex-wrap: wrap; }
+.scope-pill {
+  padding: 0.35rem 0.85rem;
   border-radius: 2rem;
   border: 1.5px solid #7dd3fc;
   background: #ffffff;
@@ -945,13 +960,15 @@ watch([filterByLocation, () => props.profile?.municipality, () => props.profile?
   font-weight: 800;
   cursor: pointer;
   transition: all 0.18s;
+  white-space: nowrap;
 }
-.loc-toggle.active {
+.scope-pill.active {
   background: #0f172a;
   color: #38bdf8;
   border-color: #0f172a;
 }
-.loc-toggle:hover { transform: scale(1.03); }
+.scope-pill:hover:not(:disabled):not(.active) { transform: scale(1.03); background: #e0f2fe; }
+.scope-pill:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Browse mode */
 .browse-mode-row {
