@@ -142,6 +142,7 @@
               <div class="row-top">
                 <h3 class="tutor-name">{{ group.displayName }}</h3>
                 <div class="meta-pills">
+                  <span :class="['pill', tierPillClass(group.tier)]">{{ tierLabel(group.tier) }}</span>
                   <span class="pill pill-muted">{{ group.posts.length }} listing{{ group.posts.length === 1 ? '' : 's' }}</span>
                   <span class="pill pill-rating">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -214,6 +215,9 @@
               </div>
             </div>
             <p class="expertise">{{ tutor.expertise }}</p>
+            <div class="tier-badge-row">
+              <span :class="['listing-tier-badge', tierPillClass(tutor.tier)]">{{ tierLabel(tutor.tier) }}</span>
+            </div>
             <p v-if="tutor.location" class="location-text">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               {{ tutor.location }}
@@ -543,6 +547,20 @@ function tutorDisplayName(post) {
   return fromAuthUser || 'Tutor';
 }
 
+/** Maps tutor_tier slug to a human label */
+function tierLabel(tier) {
+  if (tier === 'pro')  return '⭐⭐ Pro Tutor';
+  if (tier === 'plus') return '⭐ Plus Tutor';
+  return 'Basic Tutor';
+}
+
+/** Maps tier to a CSS pill class */
+function tierPillClass(tier) {
+  if (tier === 'pro')  return 'pill-pro';
+  if (tier === 'plus') return 'pill-plus';
+  return 'pill-basic';
+}
+
 function postLocationLine(post) {
   return [post.tutor_barangay, post.tutor_municipality, post.tutor_province].filter(Boolean).join(', ');
 }
@@ -634,6 +652,7 @@ const tutorGroupsFiltered = computed(() => {
       tutor_id,
       posts: sortedPosts,
       displayName,
+      tier: first.tutor_tier || 'basic',
       thumbnail: first.tutor_avatar_url || first.photo_url || '/images/tutor_piano.png',
       bio: first.tutor_bio || '',
       achievements: first.tutor_achievements || '',
@@ -698,6 +717,7 @@ function mapPostToListingCard(post, { preferListingPhoto = false } = {}) {
     rating: '4.9',
     reviews: 0,
     rate: post.hourly_rate,
+    tier: post.tutor_tier || 'basic',
     tags: [post.subject, 'Tutor'],
     thumbnail: thumb,
     municipality: post.tutor_municipality || '',
@@ -1184,6 +1204,18 @@ watch([filterByLocation, () => props.profile?.municipality, () => props.profile?
 .pill-muted { background: #f1f5f9; color: #0f172a; }
 .pill-rating { background: #fffbeb; color: #b45309; }
 .pill-rating svg { width: 14px; height: 14px; }
+
+/* Tier badges */
+.pill-basic { background: #f1f5f9; color: #475569; }
+.pill-plus  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.pill-pro   { background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: #fff; border: none; }
+
+.tier-badge-row { margin: 0.2rem 0 0.4rem; }
+.listing-tier-badge {
+  display: inline-block;
+  font-size: 0.68rem; font-weight: 800;
+  padding: 0.2rem 0.6rem; border-radius: 2rem;
+}
 .row-subjects { margin-top: 0.25rem; font-size: 0.85rem; font-weight: 700; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row-loc { margin-top: 0.35rem; font-size: 0.78rem; color: #94a3b8; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .row-loc svg { width: 14px; height: 14px; flex-shrink: 0; }

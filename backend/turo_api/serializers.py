@@ -113,6 +113,7 @@ class ExpertisePostSerializer(serializers.ModelSerializer):
     tutor_achievements = serializers.SerializerMethodField()
     tutor_first_name   = serializers.SerializerMethodField()
     tutor_last_name    = serializers.SerializerMethodField()
+    tutor_tier         = serializers.SerializerMethodField()
 
     class Meta:
         model = ExpertisePost
@@ -121,7 +122,7 @@ class ExpertisePostSerializer(serializers.ModelSerializer):
                   'photo', 'photo_url', 'session_slots',
                   'tutor_barangay', 'tutor_municipality', 'tutor_province',
                   'tutor_avatar_url', 'tutor_bio', 'tutor_achievements',
-                  'tutor_first_name', 'tutor_last_name',
+                  'tutor_first_name', 'tutor_last_name', 'tutor_tier',
                   'is_published', 'created_at')
         extra_kwargs = {'photo': {'required': False}}
 
@@ -171,6 +172,10 @@ class ExpertisePostSerializer(serializers.ModelSerializer):
     def get_tutor_last_name(self, obj):
         p = self._tutor_profile_row(obj)
         return (p.last_name or '').strip() if p else ''
+
+    def get_tutor_tier(self, obj):
+        p = self._tutor_profile_row(obj)
+        return (p.tutor_tier or 'basic') if p else 'basic'
 
     def get_photo_url(self, obj):
         request = self.context.get('request')
