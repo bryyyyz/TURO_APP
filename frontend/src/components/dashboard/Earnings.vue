@@ -311,7 +311,7 @@ const payoutList = computed(() =>
 .e-icon-wrap { width: 40px; height: 40px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 0.75rem; }
 .e-icon-wrap svg { width: 18px; height: 18px; }
 .e-label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
-.e-value { font-family: var(--font-display); font-size: 1.75rem; font-weight: 800; color: #0f172a; margin: 0.25rem 0; }
+.e-value { font-family: var(--font-display); font-size: 2.4rem; font-weight: 800; color: #0f172a; margin: 0.25rem 0; }
 .e-trend { font-size: 0.72rem; font-weight: 700; }
 .trend-up { color: #10b981; }
 .trend-neutral { color: #d97706; }
@@ -372,7 +372,7 @@ const payoutList = computed(() =>
   .e-icon-wrap { width: 32px; height: 32px; border-radius: 10px; margin-bottom: 0.5rem; }
   .e-icon-wrap svg { width: 14px; height: 14px; }
   .e-label { font-size: 0.62rem; }
-  .e-value { font-size: 1.3rem; }
+  .e-value { font-size: 26px; font-weight: 800; }
   .e-trend { font-size: 0.62rem; }
 
   .revenue-row { grid-template-columns: 1fr; gap: 1rem; }
