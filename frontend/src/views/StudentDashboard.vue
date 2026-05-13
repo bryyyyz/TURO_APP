@@ -477,6 +477,22 @@ onMounted(async () => {
   } else {
     router.push('/login/student');
   }
+
+  // Guard: detect cross-tab sign-in. If a different user logs in on another
+  // tab, the shared localStorage session changes. Redirect to student login
+  // so this tab doesn't display the wrong account's data.
+  supabase.auth.onAuthStateChange((event, newSession) => {
+    if (event === 'SIGNED_OUT') {
+      router.replace('/login/student');
+      return;
+    }
+    if (event === 'SIGNED_IN' && user.value && newSession?.user?.id !== user.value.id) {
+      console.warn('[StudentDashboard] Cross-tab session change detected — redirecting to student login');
+      user.value = null;
+      profile.value = null;
+      router.replace('/login/student');
+    }
+  });
 });
 
 onUnmounted(() => {

@@ -501,6 +501,22 @@ onMounted(async () => {
   } else {
     router.push('/login/tutor');
   }
+
+  // Guard: detect cross-tab sign-in. If a different user logs in on another
+  // tab, the shared localStorage session changes. Redirect to tutor login
+  // so this tab doesn't display the wrong account's data.
+  supabase.auth.onAuthStateChange((event, newSession) => {
+    if (event === 'SIGNED_OUT') {
+      router.replace('/login/tutor');
+      return;
+    }
+    if (event === 'SIGNED_IN' && user.value && newSession?.user?.id !== user.value.id) {
+      console.warn('[TutorDashboard] Cross-tab session change detected — redirecting to tutor login');
+      user.value = null;
+      profile.value = null;
+      router.replace('/login/tutor');
+    }
+  });
 });
 
 onUnmounted(() => {
