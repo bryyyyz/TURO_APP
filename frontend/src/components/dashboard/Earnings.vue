@@ -22,15 +22,15 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </div>
         <span class="e-label">This Month</span>
-        <h2 class="e-value">₱8,450</h2>
-        <span class="e-trend trend-up">▲ 8%</span>
+        <h2 class="e-value">₱{{ thisMonthEarnings }}</h2>
+        <span class="e-trend trend-up">Current month</span>
       </div>
       <div class="e-card bg-mint">
         <div class="e-icon-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         </div>
         <span class="e-label">Pending Payout</span>
-        <h2 class="e-value">₱2,400</h2>
+        <h2 class="e-value">₱{{ pendingPayout }}</h2>
         <span class="e-trend trend-neutral">Processing</span>
       </div>
       <div class="e-card bg-lavender">
@@ -58,12 +58,14 @@
             <line x1="0" y1="170" x2="600" y2="170" stroke="#f1f5f9" />
             <line x1="0" y1="120" x2="600" y2="120" stroke="#f1f5f9" />
             <line x1="0" y1="70" x2="600" y2="70" stroke="#f1f5f9" />
-            <path d="M50 130 L150 110 L250 120 L350 100 L450 70 L550 90" fill="none" stroke="#3b82f6" stroke-width="2.5" />
-            <path d="M50 160 L150 140 L250 150 L350 135 L450 110 L550 125" fill="none" stroke="#f59e0b" stroke-width="2.5" />
+            <path :d="bluePath" fill="none" stroke="#3b82f6" stroke-width="2.5" />
+            <path :d="goldPath" fill="none" stroke="#f59e0b" stroke-width="2.5" />
             <circle v-for="p in bluePoints" :key="'b'+p.x" :cx="p.x" :cy="p.y" r="4" fill="#3b82f6"/>
             <circle v-for="p in goldPoints" :key="'g'+p.x" :cx="p.x" :cy="p.y" r="4" fill="#f59e0b"/>
           </svg>
-          <div class="chart-labels"><span>DEC</span><span>JAN</span><span>FEB</span><span>MAR</span><span>APR</span><span>MAY</span></div>
+          <div class="chart-labels">
+            <span v-for="d in chartData" :key="d.label">{{ d.label }}</span>
+          </div>
         </div>
         <div class="chart-legend">
           <div class="leg-item"><span class="leg-dot blue"></span> Earnings</div>
@@ -76,15 +78,15 @@
         <div class="rate-content">
           <div class="rate-item">
             <span class="label">Hourly Rate</span>
-            <span class="value gold">₱250/hr</span>
+            <span class="value gold">₱{{ hourlyRate }}/hr</span>
           </div>
           <div class="rate-item">
             <span class="label">Platform Fee</span>
-            <span class="value orange">10%</span>
+            <span class="value orange">{{ platformFeePercent }}%</span>
           </div>
           <div class="rate-item total">
             <span class="label">Net Rate</span>
-            <span class="value green">₱225/hr</span>
+            <span class="value green">₱{{ netRate }}/hr</span>
           </div>
           <button class="btn-update">Update Rate</button>
         </div>
@@ -144,15 +146,13 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue';
-import { paymentService } from '../../services/api';
+import { paymentService, postService } from '../../services/api';
 import { REFRESH_TRIGGER } from '../../symbols/injectionKeys';
 
 const props = defineProps({ profile: Object });
 
-const bluePoints = [{x:50,y:130},{x:150,y:110},{x:250,y:120},{x:350,y:100},{x:450,y:70},{x:550,y:90}];
-const goldPoints = [{x:50,y:160},{x:150,y:140},{x:250,y:150},{x:350,y:135},{x:450,y:110},{x:550,y:125}];
-
 const payments = ref([]);
+const posts    = ref([]);
 const loading  = ref(false);
 const refreshTrigger = inject(REFRESH_TRIGGER, null);
 
@@ -161,8 +161,12 @@ async function fetchEarnings() {
   if (p?.user) {
     loading.value = true;
     try {
-      const { data } = await paymentService.getTutorPayments(p.user);
-      payments.value = Array.isArray(data) ? data : (data.results || []);
+      const [pmtRes, postRes] = await Promise.all([
+        paymentService.getTutorPayments(p.user),
+        postService.getAllPosts({ tutor_id: p.user })
+      ]);
+      payments.value = Array.isArray(pmtRes.data) ? pmtRes.data : (pmtRes.data.results || []);
+      posts.value    = Array.isArray(postRes.data) ? postRes.data : (postRes.data.results || []);
     } catch (e) {
       console.error('Failed to fetch earnings', e);
     } finally {
@@ -175,10 +179,98 @@ watch(() => props.profile, fetchEarnings, { immediate: true });
 watch(refreshTrigger, fetchEarnings);
 
 const totalEarnings = computed(() =>
-  payments.value.reduce((s, p) => s + parseFloat(p.amount || 0), 0).toFixed(2)
+  payments.value
+    .filter(p => p.status === 'completed')
+    .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+    .toFixed(2)
 );
 
-const sessionsBilled = computed(() => payments.value.length);
+const thisMonthEarnings = computed(() => {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  return payments.value
+    .filter(p => {
+      if (p.status !== 'completed') return false;
+      const d = new Date(p.paid_at || p.booking_date);
+      return d.getMonth() === month && d.getFullYear() === year;
+    })
+    .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+    .toFixed(2);
+});
+
+const pendingPayout = computed(() =>
+  payments.value
+    .filter(p => p.status === 'pending')
+    .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+    .toFixed(2)
+);
+
+const sessionsBilled = computed(() => payments.value.filter(p => p.status === 'completed').length);
+
+const hourlyRate = computed(() => {
+  if (posts.value.length === 0) return 0;
+  return parseFloat(posts.value[0].hourly_rate || 0);
+});
+
+const platformFeePercent = ref(10); // Standard 10%
+const platformFeeAmount = computed(() => (hourlyRate.value * (platformFeePercent.value / 100)));
+const netRate = computed(() => (hourlyRate.value - platformFeeAmount.value).toFixed(2));
+
+const MONTH_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+const chartData = computed(() => {
+  const now = new Date();
+  const last6Months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+    return {
+      month: d.getMonth(),
+      year: d.getFullYear(),
+      label: MONTH_NAMES[d.getMonth()],
+      earnings: 0,
+      payouts: 0
+    };
+  });
+
+  payments.value.forEach(p => {
+    const d = new Date(p.paid_at || p.booking_date);
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    const found = last6Months.find(x => x.month === m && x.year === y);
+    if (found) {
+      if (p.status === 'completed') found.earnings += parseFloat(p.amount || 0);
+      else if (p.status === 'pending') found.payouts += parseFloat(p.amount || 0);
+    }
+  });
+
+  return last6Months;
+});
+
+const bluePoints = computed(() => {
+  const max = Math.max(...chartData.value.map(d => d.earnings), 1000);
+  return chartData.value.map((d, i) => ({
+    x: 50 + i * 100,
+    y: 170 - (d.earnings / max) * 100
+  }));
+});
+
+const goldPoints = computed(() => {
+  const max = Math.max(...chartData.value.map(d => d.payouts), 1000);
+  return chartData.value.map((d, i) => ({
+    x: 50 + i * 100,
+    y: 170 - (d.payouts / max) * 100
+  }));
+});
+
+const bluePath = computed(() => {
+  if (bluePoints.value.length < 2) return '';
+  return `M ${bluePoints.value.map(p => `${p.x} ${p.y}`).join(' L ')}`;
+});
+
+const goldPath = computed(() => {
+  if (goldPoints.value.length < 2) return '';
+  return `M ${goldPoints.value.map(p => `${p.x} ${p.y}`).join(' L ')}`;
+});
 
 const payoutList = computed(() =>
   payments.value.map(p => ({
