@@ -100,7 +100,6 @@
           <component
             :is="activeComponent"
             :profile="profile"
-            :key="currentTab"
             @profile-updated="onProfileUpdated"
             @navigate-discover="currentTab = 'discover'"
           />
