@@ -269,6 +269,7 @@ import { ref, computed, watch, inject } from 'vue';
 import { TuroIcon } from '../icons';
 import { bookingService, paymentService } from '../../services/api';
 import { OPEN_NOTIFICATIONS, REFRESH_TRIGGER } from '../../symbols/injectionKeys';
+import { formatCurrency } from '../../utils/format';
 
 const props = defineProps({ profile: Object });
 const emit = defineEmits(['navigate-discover']);
@@ -371,7 +372,7 @@ async function fetchStudentDashboardData() {
     stats.value[2].delta    = uniqueIds.length > 0 ? uniqueIds.length + ' tutor(s)' : 'No tutors';
     stats.value[2].progress = Math.min(uniqueIds.length * 25, 100);
 
-    stats.value[3].value    = '₱' + totalSpent.toFixed(2);
+    stats.value[3].value    = '₱' + formatCurrency(totalSpent);
     stats.value[3].delta    = pmts.length + ' payment(s)';
     stats.value[3].progress = Math.min(pmts.length * 15, 100);
 

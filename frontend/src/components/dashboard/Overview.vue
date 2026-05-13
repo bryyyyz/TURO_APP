@@ -189,6 +189,7 @@ import { ref, computed, watch } from 'vue';
 import { TuroIcon } from '../icons';
 import { bookingService, paymentService } from '../../services/api';
 import { useToast } from '../../composables/useToast';
+import { formatCurrency } from '../../utils/format';
 
 const props = defineProps({ profile: Object });
 const { showToast } = useToast();
@@ -271,7 +272,7 @@ watch(() => props.profile, async () => {
       id:      p.id,
       name:    p.student_name || 'Student',
       subject: p.post_subject || p.post_title || 'Session',
-      amount:  parseFloat(p.amount || 0).toFixed(2),
+      amount:  formatCurrency(p.amount),
     }));
 
     // Stats
@@ -282,11 +283,11 @@ watch(() => props.profile, async () => {
       .filter(p => p.booking_date?.startsWith(thisMonthKey))
       .reduce((s, p) => s + parseFloat(p.amount || 0), 0);
 
-    stats.value[0].value    = '₱' + total.toFixed(2);
+    stats.value[0].value    = '₱' + formatCurrency(total);
     stats.value[0].delta    = payments.length + ' payment(s)';
     stats.value[0].progress = Math.min(payments.length * 10, 100);
 
-    stats.value[1].value    = '₱' + monthTotal.toFixed(2);
+    stats.value[1].value    = '₱' + formatCurrency(monthTotal);
     stats.value[1].delta    = 'This month';
     stats.value[1].progress = total > 0 ? Math.min((monthTotal / total) * 100, 100) : 0;
 
@@ -315,11 +316,11 @@ watch(() => props.profile, async () => {
         .filter(p => p.booking_date?.startsWith(thisMonthKey))
         .reduce((s, p) => s + parseFloat(p.amount || 0), 0);
 
-      stats.value[0].value    = '₱' + total.toFixed(2);
+      stats.value[0].value    = '₱' + formatCurrency(total);
       stats.value[0].delta    = allPayments.length + ' payment(s)';
       stats.value[0].progress = Math.min(allPayments.length * 10, 100);
 
-      stats.value[1].value    = '₱' + monthTotal.toFixed(2);
+      stats.value[1].value    = '₱' + formatCurrency(monthTotal);
       stats.value[1].delta    = 'This month';
       stats.value[1].progress = total > 0 ? Math.min((monthTotal / total) * 100, 100) : 0;
 

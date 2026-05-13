@@ -148,6 +148,7 @@
 import { ref, computed, watch, inject } from 'vue';
 import { paymentService, postService } from '../../services/api';
 import { REFRESH_TRIGGER } from '../../symbols/injectionKeys';
+import { formatCurrency } from '../../utils/format';
 
 const props = defineProps({ profile: Object });
 
@@ -179,31 +180,34 @@ watch(() => props.profile, fetchEarnings, { immediate: true });
 watch(refreshTrigger, fetchEarnings);
 
 const totalEarnings = computed(() =>
-  payments.value
-    .filter(p => p.status === 'completed')
-    .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
-    .toFixed(2)
+  formatCurrency(
+    payments.value
+      .filter(p => p.status === 'completed')
+      .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+  )
 );
 
 const thisMonthEarnings = computed(() => {
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
-  return payments.value
-    .filter(p => {
-      if (p.status !== 'completed') return false;
-      const d = new Date(p.paid_at || p.booking_date);
-      return d.getMonth() === month && d.getFullYear() === year;
-    })
-    .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
-    .toFixed(2);
+  return formatCurrency(
+    payments.value
+      .filter(p => {
+        if (p.status !== 'completed') return false;
+        const d = new Date(p.paid_at || p.booking_date);
+        return d.getMonth() === month && d.getFullYear() === year;
+      })
+      .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+  );
 });
 
 const pendingPayout = computed(() =>
-  payments.value
-    .filter(p => p.status === 'pending')
-    .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
-    .toFixed(2)
+  formatCurrency(
+    payments.value
+      .filter(p => p.status === 'pending')
+      .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+  )
 );
 
 const sessionsBilled = computed(() => payments.value.filter(p => p.status === 'completed').length);
@@ -215,7 +219,7 @@ const hourlyRate = computed(() => {
 
 const platformFeePercent = ref(10); // Standard 10%
 const platformFeeAmount = computed(() => (hourlyRate.value * (platformFeePercent.value / 100)));
-const netRate = computed(() => (hourlyRate.value - platformFeeAmount.value).toFixed(2));
+const netRate = computed(() => formatCurrency(hourlyRate.value - platformFeeAmount.value));
 
 const MONTH_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
@@ -280,7 +284,7 @@ const payoutList = computed(() =>
     date: p.booking_date
       ? new Date(p.booking_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       : (p.paid_at ? new Date(p.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'),
-    amount: parseFloat(p.amount).toFixed(2),
+    amount: formatCurrency(p.amount),
     status: p.status === 'completed' ? 'PAID' : p.status.toUpperCase(),
     avatar: p.student_avatar_url || '/images/student_avatar.png',
   }))

@@ -141,6 +141,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { paymentService } from '../../services/api';
+import { formatCurrency } from '../../utils/format';
 
 const props = defineProps({ profile: Object });
 
@@ -162,7 +163,7 @@ watch(() => props.profile, async (p) => {
 }, { immediate: true });
 
 const totalSpent = computed(() =>
-  payments.value.reduce((s, p) => s + parseFloat(p.amount || 0), 0).toFixed(2)
+  formatCurrency(payments.value.reduce((s, p) => s + parseFloat(p.amount || 0), 0))
 );
 
 const sessionCount = computed(() => payments.value.length);
@@ -176,7 +177,7 @@ const transactions = computed(() =>
       ? new Date(p.booking_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       : '—',
     status: p.status === 'completed' ? 'PAID' : p.status?.toUpperCase() || 'PAID',
-    amount: parseFloat(p.amount).toFixed(2),
+    amount: formatCurrency(p.amount),
     initial: (p.post_subject || 'S').charAt(0),
     color: '#1e3a8a',
   }))
