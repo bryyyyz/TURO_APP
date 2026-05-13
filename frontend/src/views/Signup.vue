@@ -100,21 +100,6 @@
               </div>
             </div>
 
-            <div class="grid-row">
-              <div class="field">
-                <label>Barangay</label>
-                <input type="text" v-model="form.barangay" required />
-              </div>
-              <div class="field">
-                <label>Municipality / City</label>
-                <input type="text" v-model="form.municipality" required />
-              </div>
-            </div>
-
-            <div class="field">
-              <label>Province</label>
-              <input type="text" v-model="form.province" required />
-            </div>
 
             <button type="button" class="btn-submit" @click="nextStep">
               Proceed
@@ -178,9 +163,6 @@ const form = reactive({
   lastName: '', 
   middleName: '', 
   nameExtension: '', 
-  barangay: '',
-  municipality: '',
-  province: '',
   email: '', 
   password: '',
   confirmPassword: ''
@@ -193,8 +175,8 @@ const features = [
 ];
 
 const nextStep = () => {
-  if (!form.firstName || !form.lastName || !form.barangay || !form.municipality || !form.province) {
-    showToast('Please fill in all required fields.', 'error');
+  if (!form.firstName || !form.lastName) {
+    showToast('Please fill in your first and last name.', 'error');
     return;
   }
   currentStep.value = 2;
@@ -222,9 +204,6 @@ const handleSignup = async () => {
           last_name: form.lastName,
           middle_name: form.middleName || '',
           name_extension: form.nameExtension || '',
-          barangay: form.barangay || '',
-          municipality: form.municipality || '',
-          province: form.province || '',
         },
       },
     });
@@ -254,9 +233,6 @@ const handleSignup = async () => {
             last_name: form.lastName,
             middle_name: form.middleName,
             name_extension: form.nameExtension,
-            barangay: form.barangay,
-            municipality: form.municipality,
-            province: form.province,
             role: selectedRole.value,
           });
         }
