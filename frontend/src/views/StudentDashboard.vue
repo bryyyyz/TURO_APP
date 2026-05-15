@@ -201,7 +201,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, onErrorCaptured, watch, provide } from 'vue';
+import { ref, computed, onMounted, onUnmounted, onErrorCaptured, watch, provide, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { supabase } from '../supabase';
 import { useToast } from '../composables/useToast';
@@ -448,60 +448,85 @@ async function mergeSignupMetadataIntoDjangoProfile(sessionUser, role, row) {
   return { ...row, ...patch };
 }
 
-onMounted(async () => {
-  document.addEventListener('click', onGlobalClick);
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) {
-    user.value = session.user;
-    try {
-      // Load all profile data directly from Django (has all fields including address)
-      const { data } = await profileService.getProfileByEmail(session.user.email, 'student');
-      const profiles = Array.isArray(data) ? data : (data.results || []);
-      if (profiles && profiles.length > 0) {
-        let row = {
-          ...profiles[0],
-          email: profiles[0].email || session.user.email, // Use Django auth_user email
-        };
-        row = await mergeSignupMetadataIntoDjangoProfile(session.user, 'student', row);
-        profile.value = row;
-      } else {
-        const fallback = fallbackNameFromSession(session.user, 'Student');
-        profile.value = {
-          first_name: fallback.first_name,
-          last_name: fallback.last_name,
-          email: session.user.email,
-          role: 'student'
-        };
-      }
-    } catch (error) {
-      console.error('Error fetching student profile:', error);
-      const fallback = fallbackNameFromSession(session.user, 'Student');
+/** Load the Django profile for a given Supabase session user. */
+async function loadProfileForSession(sessionUser) {
+  user.value = sessionUser;
+  try {
+    const { data } = await profileService.getProfileByEmail(sessionUser.email, 'student');
+    const profiles = Array.isArray(data) ? data : (data.results || []);
+    if (profiles && profiles.length > 0) {
+      let row = {
+        ...profiles[0],
+        email: profiles[0].email || sessionUser.email,
+      };
+      row = await mergeSignupMetadataIntoDjangoProfile(sessionUser, 'student', row);
+      profile.value = row;
+    } else {
+      const fallback = fallbackNameFromSession(sessionUser, 'Student');
       profile.value = {
         first_name: fallback.first_name,
         last_name: fallback.last_name,
-        email: session.user.email,
-        role: 'student'
+        email: sessionUser.email,
+        role: 'student',
       };
     }
-  } else {
-    router.push('/login/student');
+  } catch (error) {
+    console.error('[StudentDashboard] Error fetching student profile:', error);
+    const fallback = fallbackNameFromSession(sessionUser, 'Student');
+    profile.value = {
+      first_name: fallback.first_name,
+      last_name: fallback.last_name,
+      email: sessionUser.email,
+      role: 'student',
+    };
   }
+}
 
-  // Guard: detect cross-tab sign-in. If a different user logs in on another
-  // tab, the shared localStorage session changes. Redirect to student login
-  // so this tab doesn't display the wrong account's data.
-  supabase.auth.onAuthStateChange((event, newSession) => {
+onMounted(async () => {
+  document.addEventListener('click', onGlobalClick);
+
+  // Listen for auth events. This covers both the normal login flow AND the
+  // hard-refresh case where Supabase fires INITIAL_SESSION once it has
+  // restored the token from localStorage (getSession alone can return null
+  // during that brief initialization window).
+  supabase.auth.onAuthStateChange(async (event, newSession) => {
     if (event === 'SIGNED_OUT') {
-      router.replace('/login/student');
-      return;
-    }
-    if (event === 'SIGNED_IN' && user.value && newSession?.user?.id !== user.value.id) {
-      console.warn('[StudentDashboard] Cross-tab session change detected — redirecting to student login');
       user.value = null;
       profile.value = null;
       router.replace('/login/student');
+      return;
+    }
+
+    if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (!newSession?.user) {
+        // No active session — send to login
+        router.replace('/login/student');
+        return;
+      }
+      // Cross-tab guard: a different user signed in on another tab
+      if (event === 'SIGNED_IN' && user.value && newSession.user.id !== user.value.id) {
+        console.warn('[StudentDashboard] Cross-tab session change — redirecting to login');
+        user.value = null;
+        profile.value = null;
+        router.replace('/login/student');
+        return;
+      }
+      // Only fetch profile if we don't already have it for this user
+      if (!profile.value || profile.value.email !== newSession.user.email) {
+        await loadProfileForSession(newSession.user);
+      }
     }
   });
+
+  // Also attempt an immediate getSession() call so data loads without waiting
+  // for the auth event on fast connections / already-initialized sessions.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user && !profile.value) {
+    await loadProfileForSession(session.user);
+  } else if (!session?.user && !profile.value) {
+    // Give the INITIAL_SESSION event a moment before hard-redirecting
+    await nextTick();
+  }
 });
 
 onUnmounted(() => {
