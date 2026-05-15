@@ -310,12 +310,54 @@ class BookingSerializer(serializers.ModelSerializer):
         return attrs
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender_name   = serializers.CharField(source='sender.username', read_only=True)
-    receiver_name = serializers.CharField(source='receiver.username', read_only=True)
+    sender_name        = serializers.SerializerMethodField()
+    receiver_name      = serializers.SerializerMethodField()
+    sender_avatar_url  = serializers.SerializerMethodField()
+    receiver_avatar_url = serializers.SerializerMethodField()
+    sender_user_id     = serializers.IntegerField(source='sender_id', read_only=True)
+    receiver_user_id   = serializers.IntegerField(source='receiver_id', read_only=True)
 
     class Meta:
         model = Message
-        fields = '__all__'
+        fields = ('id', 'sender', 'receiver', 'sender_user_id', 'receiver_user_id',
+                  'sender_name', 'receiver_name', 'sender_avatar_url', 'receiver_avatar_url',
+                  'content', 'timestamp', 'is_read')
+
+    def _profile_name(self, user):
+        try:
+            p = user.profile
+            name = f"{(p.first_name or '').strip()} {(p.last_name or '').strip()}".strip()
+            return name or user.get_full_name() or user.username
+        except Profile.DoesNotExist:
+            return user.get_full_name() or user.username
+
+    def _profile_avatar(self, user):
+        request = self.context.get('request')
+        try:
+            p = user.profile
+            if p.avatar and request:
+                try:
+                    url = p.avatar.url
+                    if str(url).startswith(('http://', 'https://')):
+                        return str(url)
+                    return request.build_absolute_uri(str(url))
+                except (OSError, ValueError):
+                    return None
+        except Profile.DoesNotExist:
+            pass
+        return None
+
+    def get_sender_name(self, obj):
+        return self._profile_name(obj.sender)
+
+    def get_receiver_name(self, obj):
+        return self._profile_name(obj.receiver)
+
+    def get_sender_avatar_url(self, obj):
+        return self._profile_avatar(obj.sender)
+
+    def get_receiver_avatar_url(self, obj):
+        return self._profile_avatar(obj.receiver)
 
 class PaymentSerializer(serializers.ModelSerializer):
     student_name  = serializers.SerializerMethodField()

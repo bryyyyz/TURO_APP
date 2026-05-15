@@ -184,9 +184,100 @@ class BookingViewSet(viewsets.ModelViewSet):
             booking.session_slot.save()
 
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
+    queryset = Message.objects.select_related(
+        'sender', 'sender__profile', 'receiver', 'receiver__profile'
+    ).all()
     serializer_class = MessageSerializer
     permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        qs = self.queryset
+        user_id       = self.request.query_params.get('user_id')
+        other_user_id = self.request.query_params.get('other_user_id')
+
+        if user_id and other_user_id:
+            # Conversation thread between two users
+            qs = qs.filter(
+                Q(sender_id=user_id, receiver_id=other_user_id) |
+                Q(sender_id=other_user_id, receiver_id=user_id)
+            ).order_by('timestamp')
+            # Mark incoming messages as read (use plain queryset to avoid select_related issues)
+            Message.objects.filter(
+                sender_id=other_user_id, receiver_id=user_id, is_read=False
+            ).update(is_read=True)
+        elif user_id:
+            # All messages involving this user
+            qs = qs.filter(
+                Q(sender_id=user_id) | Q(receiver_id=user_id)
+            ).order_by('timestamp')
+        return qs
+
+
+class ConversationListView(APIView):
+    """Returns a summarised inbox: one entry per unique conversation partner."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return response.Response(
+                {'detail': 'user_id query param is required.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Fetch all messages involving this user
+        messages_qs = (
+            Message.objects
+            .select_related('sender', 'sender__profile', 'receiver', 'receiver__profile')
+            .filter(Q(sender_id=user_id) | Q(receiver_id=user_id))
+            .order_by('timestamp')
+        )
+
+        # Build conversation map keyed by the OTHER user's id
+        conversations = {}
+        for msg in messages_qs:
+            other_user = msg.receiver if str(msg.sender_id) == str(user_id) else msg.sender
+            key = other_user.id
+            conversations[key] = {'msg': msg, 'other': other_user}
+
+        result = []
+        for other_id, data in conversations.items():
+            other = data['other']
+            msg   = data['msg']
+            try:
+                p = other.profile
+                name = f"{(p.first_name or '').strip()} {(p.last_name or '').strip()}".strip()
+                name = name or other.get_full_name() or other.username
+                avatar_url = None
+                if p.avatar:
+                    try:
+                        url = p.avatar.url
+                        avatar_url = (
+                            url if str(url).startswith(('http://', 'https://'))
+                            else request.build_absolute_uri(url)
+                        )
+                    except (OSError, ValueError):
+                        avatar_url = None
+            except Profile.DoesNotExist:
+                name = other.get_full_name() or other.username
+                avatar_url = None
+
+            unread_count = messages_qs.filter(
+                sender_id=other_id, receiver_id=user_id, is_read=False
+            ).count()
+
+            result.append({
+                'other_user_id': other_id,
+                'other_user_name': name,
+                'other_user_avatar_url': avatar_url,
+                'last_message': msg.content,
+                'last_message_timestamp': msg.timestamp,
+                'unread_count': unread_count,
+            })
+
+        # Sort by latest message
+        result.sort(key=lambda x: x['last_message_timestamp'], reverse=True)
+        return response.Response(result, status=status.HTTP_200_OK)
 
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.select_related('booking__student', 'booking__tutor', 'booking__expertise_post').all()

@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     ProfileViewSet, ExpertisePostViewSet, SessionSlotViewSet, TutorAvailabilityViewSet,
-    BookingViewSet, MessageViewSet, PaymentViewSet, AdminTierRequestsView, AdminTierDecisionView
+    BookingViewSet, MessageViewSet, PaymentViewSet, AdminTierRequestsView, AdminTierDecisionView,
+    ConversationListView
 )
 
 router = DefaultRouter()
@@ -17,5 +18,6 @@ router.register(r'payments', PaymentViewSet)
 urlpatterns = [
     path('admin/tier-requests/', AdminTierRequestsView.as_view()),
     path('admin/tier-requests/<int:profile_id>/', AdminTierDecisionView.as_view()),
+    path('conversations/', ConversationListView.as_view()),
     path('', include(router.urls)),
 ]

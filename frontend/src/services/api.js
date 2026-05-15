@@ -94,7 +94,13 @@ export const paymentService = {
 };
 
 export const messageService = {
-    getMessages: () => api.get('messages/'),
+    /** Inbox: one entry per unique conversation partner for the given user */
+    getConversations: (userId) =>
+        api.get('conversations/', { params: { user_id: userId } }),
+    /** Thread: all messages between user_id and other_user_id (also marks incoming as read) */
+    getThread: (userId, otherUserId) =>
+        api.get('messages/', { params: { user_id: userId, other_user_id: otherUserId } }),
+    /** Send a new message */
     sendMessage: (data) => api.post('messages/', data),
 };
 
