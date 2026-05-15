@@ -148,7 +148,8 @@ const loadingInbox    = ref(true);
 const loadingThread   = ref(false);
 const sending         = ref(false);
 
-let pollInterval = null;
+let pollInterval      = null;
+let inboxPollInterval = null;
 
 // ── Colour palette for avatars ─────────────────────────────────────────
 const PALETTE = [
@@ -314,6 +315,8 @@ async function sendMessage() {
     sending.value = false;
     await nextTick();
     scrollToBottom();
+    // Refresh inbox so sender's sidebar preview is up to date immediately
+    loadInbox();
   }
 }
 
@@ -335,6 +338,15 @@ function stopPolling() {
   if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
 }
 
+/** Poll the inbox sidebar every 10 s so both sides stay in sync */
+function startInboxPolling() {
+  stopInboxPolling();
+  inboxPollInterval = setInterval(() => loadInbox(), 10000);
+}
+function stopInboxPolling() {
+  if (inboxPollInterval) { clearInterval(inboxPollInterval); inboxPollInterval = null; }
+}
+
 // ── Lifecycle ──────────────────────────────────────────────────────────
 watch(() => props.profile?.user, async (uid) => {
   if (uid) {
@@ -343,10 +355,11 @@ watch(() => props.profile?.user, async (uid) => {
     thread.value = [];
     activeConv.value = null;
     await loadInbox();
+    startInboxPolling();
   }
 }, { immediate: true });
 
-onUnmounted(() => stopPolling());
+onUnmounted(() => { stopPolling(); stopInboxPolling(); });
 </script>
 
 <style scoped>
