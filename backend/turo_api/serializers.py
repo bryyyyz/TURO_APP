@@ -23,6 +23,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     credentials_document_url = serializers.SerializerMethodField(read_only=True)
     credentials_documents = serializers.SerializerMethodField(read_only=True)
     credentials_document = serializers.FileField(required=False, allow_null=True, write_only=True)
+    is_minor = serializers.SerializerMethodField(read_only=True)
+    guardian_id_photo_url = serializers.SerializerMethodField(read_only=True)
+    guardian_id_photo = serializers.ImageField(required=False, allow_null=True, write_only=True)
 
     class Meta:
         model = Profile
@@ -34,6 +37,9 @@ class ProfileSerializer(serializers.ModelSerializer):
                   'first_name', 'last_name', 'middle_name', 'name_extension',
                   'barangay', 'municipality', 'province',
                   'gcash_number', 'billing_name',
+                  'birthday', 'is_minor',
+                  'guardian_name', 'guardian_id_type',
+                  'guardian_id_photo', 'guardian_id_photo_url',
                   'email', 'username')
 
     def _abs(self, request, url: str | None):
@@ -58,6 +64,18 @@ class ProfileSerializer(serializers.ModelSerializer):
             return None
         try:
             return self._abs(request, obj.id_photo.url)
+        except (OSError, ValueError, InvalidStorageError):
+            return None
+
+    def get_is_minor(self, obj):
+        return obj.is_minor
+
+    def get_guardian_id_photo_url(self, obj):
+        request = self.context.get('request')
+        if not obj.guardian_id_photo:
+            return None
+        try:
+            return self._abs(request, obj.guardian_id_photo.url)
         except (OSError, ValueError, InvalidStorageError):
             return None
 

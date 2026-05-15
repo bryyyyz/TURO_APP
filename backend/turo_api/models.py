@@ -47,6 +47,21 @@ class Profile(models.Model):
     )
     gcash_number = models.CharField(max_length=20, blank=True)
     billing_name = models.CharField(max_length=200, blank=True)
+    birthday = models.DateField(blank=True, null=True)
+    guardian_name = models.CharField(max_length=200, blank=True)
+    guardian_id_type = models.CharField(max_length=100, blank=True)
+    guardian_id_photo = models.ImageField(upload_to='guardian_ids/', blank=True, null=True)
+
+    @property
+    def is_minor(self):
+        if not self.birthday:
+            return False
+        from datetime import date
+        today = date.today()
+        age = today.year - self.birthday.year - (
+            (today.month, today.day) < (self.birthday.month, self.birthday.day)
+        )
+        return age < 18
 
     def __str__(self):
         return f"{self.user.username} - {self.role}"
