@@ -14,6 +14,10 @@
           <span class="dot" aria-hidden="true" />
           <span>Tier Reviews</span>
         </RouterLink>
+        <RouterLink class="nav-item" :class="{ active: isActive('/admin/id-verifications') }" to="/admin/id-verifications">
+          <span class="dot" aria-hidden="true" />
+          <span>ID Verifications</span>
+        </RouterLink>
       </nav>
 
       <div class="sidebar-footer">

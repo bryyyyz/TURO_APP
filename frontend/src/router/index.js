@@ -32,6 +32,12 @@ const routes = [
     meta: { requiresAdmin: true }
   },
   {
+    path: '/admin/id-verifications',
+    name: 'AdminIdReviews',
+    component: () => import('../views/AdminIdReviews.vue'),
+    meta: { requiresAdmin: true }
+  },
+  {
     path: '/dashboard/tutor',
     name: 'TutorDashboard',
     component: () => import('../views/TutorDashboard.vue')
