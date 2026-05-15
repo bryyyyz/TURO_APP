@@ -124,6 +124,13 @@
       </footer>
     </main>
 
+    <!-- ══ ID VERIFICATION MODAL (For new users) ══ -->
+    <IdVerificationModal
+      v-if="profile?.requires_id_verification"
+      :profile="profile"
+      @verified="onIdVerified"
+    />
+
     <!-- ══ MOBILE BOTTOM NAV (Only visible on mobile) ══ -->
     <nav class="bottom-nav">
       <div class="nav-item" :class="{ active: currentTab === 'overview' }" @click="currentTab = 'overview'">
@@ -222,6 +229,7 @@ import Students from '../components/dashboard/Students.vue';
 import Earnings from '../components/dashboard/Earnings.vue';
 import Messages from '../components/dashboard/Messages.vue';
 import TutorProfile from '../components/dashboard/TutorProfile.vue';
+import IdVerificationModal from '../components/dashboard/IdVerificationModal.vue';
 import { TuroIcon } from '../components/icons';
 import DashboardActivityPanel from '../components/DashboardActivityPanel.vue';
 import { buildTutorActivities } from '../utils/buildDashboardActivity';
@@ -286,6 +294,12 @@ function openLogoutModal() {
   showLogoutMenu.value = false;
   showLogoutModal.value = true;
 }
+
+const onIdVerified = async () => {
+  if (profile.value) {
+    profile.value.requires_id_verification = false;
+  }
+};
 
 function closeLogoutModal() {
   if (loggingOut.value) return;

@@ -18,6 +18,8 @@ class ProfileSerializer(serializers.ModelSerializer):
     username   = serializers.CharField(source='user.username', read_only=True)
     avatar_url = serializers.SerializerMethodField(read_only=True)
     avatar     = serializers.ImageField(required=False, allow_null=True, write_only=True)
+    id_photo_url = serializers.SerializerMethodField(read_only=True)
+    id_photo   = serializers.ImageField(required=False, allow_null=True, write_only=True)
     credentials_document_url = serializers.SerializerMethodField(read_only=True)
     credentials_documents = serializers.SerializerMethodField(read_only=True)
     credentials_document = serializers.FileField(required=False, allow_null=True, write_only=True)
@@ -28,6 +30,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                   'phone', 'bio', 'achievements',
                   'credentials_document', 'credentials_document_url', 'credentials_documents',
                   'avatar', 'avatar_url',
+                  'id_photo', 'id_photo_url', 'requires_id_verification',
                   'first_name', 'last_name', 'middle_name', 'name_extension',
                   'barangay', 'municipality', 'province',
                   'email', 'username')
@@ -45,6 +48,15 @@ class ProfileSerializer(serializers.ModelSerializer):
             return None
         try:
             return self._abs(request, obj.avatar.url)
+        except (OSError, ValueError, InvalidStorageError):
+            return None
+
+    def get_id_photo_url(self, obj):
+        request = self.context.get('request')
+        if not obj.id_photo:
+            return None
+        try:
+            return self._abs(request, obj.id_photo.url)
         except (OSError, ValueError, InvalidStorageError):
             return None
 

@@ -34,6 +34,8 @@ class Profile(models.Model):
     barangay = models.CharField(max_length=200, blank=True)
     municipality = models.CharField(max_length=200, blank=True)
     province = models.CharField(max_length=200, blank=True)
+    id_photo = models.ImageField(upload_to='id_photos/', blank=True, null=True)
+    requires_id_verification = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.role}"
