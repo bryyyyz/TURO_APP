@@ -59,8 +59,16 @@
 
     <!-- ══ MAIN CONTENT AREA ══ -->
     <main class="main-viewport">
-      <!-- Top Header (Desktop Only) -->
-      <header class="content-header desktop-only">
+      <!-- Loading Overlay for Initial Boot / Cold Start -->
+      <div v-if="initialLoading" class="global-loading">
+        <div class="global-spinner"></div>
+        <h2>Waking up the server...</h2>
+        <p>This may take up to 50 seconds on the first load.</p>
+      </div>
+      
+      <template v-else>
+        <!-- Top Header (Desktop Only) -->
+        <header class="content-header desktop-only">
         <div class="header-left">
           <div class="header-placeholder"></div>
         </div>
@@ -97,15 +105,10 @@
       <!-- Active View Content -->
       <div class="view-viewport">
         <keep-alive>
-          <component
-            :is="activeComponent"
-            :profile="profile"
-            @profile-updated="onProfileUpdated"
-            @navigate-discover="currentTab = 'discover'"
-          />
+          <component :is="activeComponent" :profile="profile" @profile-updated="onProfileUpdated" @navigate-discover="currentTab = 'discover'" />
         </keep-alive>
       </div>
-      
+
       <!-- Footer (Desktop Only) -->
       <footer class="dashboard-footer desktop-only">
         <span class="copyright">© 2026 TURO. All rights reserved.</span>
@@ -115,6 +118,8 @@
           <a href="#">Help Center</a>
         </div>
       </footer>
+
+      </template>
     </main>
 
     <!-- ══ MOBILE BOTTOM NAV (Only visible on mobile) ══ -->
@@ -234,6 +239,7 @@ const loggingOut = ref(false);
 const avatarLoadFailed = ref(false);
 const refreshTrigger = ref(0);
 const realtimeChannel = ref(null);
+const initialLoading = ref(true);
 
 const notificationBadgeLabel = computed(() =>
   notificationBadgeCount.value > 9 ? '9+' : String(notificationBadgeCount.value),
@@ -473,6 +479,8 @@ onMounted(async () => {
         email: session.user.email,
         role: 'student'
       };
+    } finally {
+      initialLoading.value = false;
     }
   } else {
     router.push('/login/student');
@@ -802,8 +810,33 @@ const handleLogout = async () => {
 }
 .copyright { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
 .footer-nav-desktop { display: flex; gap: 2rem; }
-.footer-nav-desktop a { font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-decoration: none; }
-.footer-nav-desktop a:hover { color: #0f172a; }
+.footer-nav-desktop .app-logo { font-size: 1.5rem; font-weight: 800; color: #1e3a8a; letter-spacing: -0.5px; margin: 0; }
+.mobile-logo-img { height: 28px; width: auto; object-fit: contain; }
+
+/* ══ LOADING OVERLAY ══ */
+.global-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+  color: #0f172a;
+}
+.global-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f1f5f9;
+  border-top-color: #f59e0b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+.global-loading h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+.global-loading p { color: #64748b; font-size: 0.95rem; font-weight: 600; }
 
 /* ── MOBILE SPECIFIC STYLES ── */
 .mobile-topbar, .bottom-nav, .drawer-overlay, .drawer { display: none; }

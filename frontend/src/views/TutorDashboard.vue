@@ -62,6 +62,14 @@
 
     <!-- ══ MAIN CONTENT AREA ══ -->
     <main class="main-viewport">
+      <!-- Loading Overlay for Initial Boot / Cold Start -->
+      <div v-if="initialLoading" class="global-loading">
+        <div class="global-spinner"></div>
+        <h2>Waking up the server...</h2>
+        <p>This may take up to 50 seconds on the first load.</p>
+      </div>
+
+      <template v-else>
       <!-- Top Header (Desktop Only) -->
       <header class="content-header desktop-only">
         <div class="header-left">
@@ -108,7 +116,7 @@
             :is="activeComponent"
             :profile="profile"
             @profile-updated="onProfileUpdated"
-            @navigate-post="currentTab = 'post'"
+            @navigate="currentTab = $event"
           />
         </keep-alive>
       </div>
@@ -122,6 +130,7 @@
           <a href="#">Help Center</a>
         </div>
       </footer>
+      </template>
     </main>
 
     <!-- ══ MOBILE BOTTOM NAV (Only visible on mobile) ══ -->
@@ -242,6 +251,7 @@ const showLogoutModal = ref(false);
 const loggingOut = ref(false);
 const avatarLoadFailed = ref(false);
 const refreshTrigger = ref(0);
+const initialLoading = ref(true);
 const realtimeChannel = ref(null);
 
 const notificationBadgeLabel = computed(() =>
@@ -497,6 +507,8 @@ onMounted(async () => {
         email: session.user.email,
         role: 'tutor'
       };
+    } finally {
+      initialLoading.value = false;
     }
   } else {
     router.push('/login/tutor');
@@ -608,27 +620,6 @@ const handleLogout = async () => {
   height: 20px;
   flex-shrink: 0;
 }
-
-/* Sidebar Promo */
-.sidebar-promo { margin-top: auto; padding: 1.5rem 0 1rem; }
-.promo-card {
-  background: linear-gradient(135deg, #07193f 0%, #0d2859 100%);
-  border-radius: 1rem; padding: 1.25rem; color: #ffffff;
-  position: relative; overflow: hidden;
-  box-shadow: 0 8px 20px -5px rgba(7, 25, 63, 0.4);
-}
-.promo-card h3 { font-size: 0.95rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.35rem; }
-.promo-card p { font-size: 0.7rem; opacity: 0.8; line-height: 1.3; margin-bottom: 1rem; max-width: 90%; }
-.btn-promo { background-color: #ffc107; color: #0f172a; border: none; padding: 0.5rem 0.75rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 800; cursor: pointer; width: 100%; position: relative; z-index: 2; }
-.promo-decoration { position: absolute; right: -10px; bottom: -20px; width: 110px; height: 110px; opacity: 0.9; z-index: 1; color: #1e3a8a; transform: rotate(-10deg); }
-.star-dec { position: absolute; z-index: 1; }
-.s1 { width: 28px; height: 28px; right: 10px; bottom: 45px; transform: rotate(-15deg); }
-.s2 { width: 12px; height: 12px; right: 25px; bottom: 95px; opacity: 0.9; }
-.s3 { width: 18px; height: 18px; right: 65px; bottom: 5px; transform: rotate(15deg); }
-.promo-boost { background: #0f172a; }
-.profile-strength { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
-.strength-circle { width: 40px; height: 40px; border: 3px solid #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; }
-.btn-yellow { background-color: #f59e0b; color: #fff; }
 
 /* Sidebar Footer */
 .sidebar-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f5f9; }
@@ -783,6 +774,31 @@ const handleLogout = async () => {
 .footer-nav-desktop { display: flex; gap: 2rem; }
 .footer-nav-desktop a { font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-decoration: none; }
 .footer-nav-desktop a:hover { color: #0f172a; }
+
+/* ══ LOADING OVERLAY ══ */
+.global-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 2rem;
+  text-align: center;
+  color: #0f172a;
+}
+.global-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f1f5f9;
+  border-top-color: #f59e0b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+.global-loading h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+.global-loading p { color: #64748b; font-size: 0.95rem; font-weight: 600; }
 
 /* ── MOBILE SPECIFIC STYLES ── */
 .mobile-topbar, .bottom-nav, .drawer-overlay, .drawer { display: none; }
