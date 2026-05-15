@@ -55,7 +55,7 @@
       </div>
 
       <!-- Main Chat Panel -->
-      <div class="chat-main" :class="{ 'mobile-hidden': !mobileViewChat }" v-if="activeConv">
+      <div class="chat-main" :class="{ 'mobile-show': mobileViewChat }" v-if="activeConv">
         <div class="chat-header">
           <button class="btn-back mobile-only" @click="mobileViewChat = false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
@@ -113,7 +113,7 @@
       </div>
 
       <!-- Empty state when no chat selected on desktop -->
-      <div class="chat-empty-state" v-if="!activeConv && !mobileViewChat">
+      <div class="chat-empty-state" v-if="!activeConv">
         <div class="empty-icon-lg">💬</div>
         <h3>Select a conversation</h3>
         <p>Choose a contact from the left to start chatting.</p>
@@ -467,9 +467,11 @@ onUnmounted(() => stopPolling());
 
   .chat-sidebar { border-right: none; background: transparent; }
   .chat-sidebar.mobile-hidden { display: none; }
-  .chat-main.mobile-hidden { display: none; }
 
-  .chat-main {
+  /* On mobile, chat-main is hidden by default (no class = hidden) */
+  .chat-main { display: none; }
+  /* Only show chat-main on mobile when mobile-show class is applied */
+  .chat-main.mobile-show {
     position: fixed; inset: 0; z-index: 400;
     background: #f8fafc; display: flex; flex-direction: column;
   }
