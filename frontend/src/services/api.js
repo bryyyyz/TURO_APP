@@ -35,10 +35,24 @@ const api = axios.create({
 // Add interceptors if you have auth tokens
 // api.interceptors.request.use(config => { ... });
 
+// ── Deduplicate concurrent GET requests ──
+const requestCache = new Map();
+function deduplicatedGet(url, config = {}) {
+    const key = `${url}?${new URLSearchParams(config.params || {}).toString()}`;
+    if (requestCache.has(key)) {
+        return requestCache.get(key);
+    }
+    const promise = api.get(url, config).finally(() => {
+        setTimeout(() => requestCache.delete(key), 500); // cache for 500ms
+    });
+    requestCache.set(key, promise);
+    return promise;
+}
+
 export const profileService = {
-    getProfile: (id) => api.get(`profiles/${id}/`),
+    getProfile: (id) => deduplicatedGet(`profiles/${id}/`),
     getProfileByEmail: (email, role) =>
-        api.get(`profiles/`, { params: { ...(email && { email }), ...(role && { role }) } }),
+        deduplicatedGet(`profiles/`, { params: { ...(email && { email }), ...(role && { role }) } }),
     updateProfile: (id, data) => {
         const isFormData = data instanceof FormData;
         return api.patch(`profiles/${id}/`, data, isFormData ? {
@@ -49,7 +63,7 @@ export const profileService = {
 };
 
 export const postService = {
-    getAllPosts: (params = {}) => api.get('posts/', { params }),
+    getAllPosts: (params = {}) => deduplicatedGet('posts/', { params }),
     createPost: (data) => {
         const isFormData = data instanceof FormData;
         // For FormData, remove Content-Type so browser sets it with the required boundary
@@ -67,29 +81,29 @@ export const postService = {
 };
 
 export const availabilityService = {
-    getAvailability: (tutorId) => api.get(`availability/`, { params: { tutor_id: tutorId } }),
+    getAvailability: (tutorId) => deduplicatedGet(`availability/`, { params: { tutor_id: tutorId } }),
     updateAvailability: (data) => api.post(`availability/`, data),
 };
 
 export const sessionSlotService = {
-    getSlots: (params) => api.get('session-slots/', { params }),
+    getSlots: (params) => deduplicatedGet('session-slots/', { params }),
     createSlot: (data) => api.post('session-slots/', data),
     deleteSlot: (id) => api.delete(`session-slots/${id}/`),
     bulkCreate: (slots) => Promise.all(slots.map(s => api.post('session-slots/', s))),
 };
 
 export const bookingService = {
-    getBookings: () => api.get('bookings/'),
-    getStudentBookings: (studentId, params = {}) => api.get('bookings/', { params: { student_id: studentId, ...params } }),
-    getTutorBookings: (tutorId, params = {}) => api.get('bookings/', { params: { tutor_id: tutorId, ...params } }),
+    getBookings: () => deduplicatedGet('bookings/'),
+    getStudentBookings: (studentId, params = {}) => deduplicatedGet('bookings/', { params: { student_id: studentId, ...params } }),
+    getTutorBookings: (tutorId, params = {}) => deduplicatedGet('bookings/', { params: { tutor_id: tutorId, ...params } }),
     createBooking: (data) => api.post('bookings/', data),
     updateBooking: (id, data) => api.patch(`bookings/${id}/`, data),
 };
 
 export const paymentService = {
-    getPayments: () => api.get('payments/'),
-    getStudentPayments: (studentId, params = {}) => api.get('payments/', { params: { student_id: studentId, ...params } }),
-    getTutorPayments: (tutorId, params = {}) => api.get('payments/', { params: { tutor_id: tutorId, ...params } }),
+    getPayments: () => deduplicatedGet('payments/'),
+    getStudentPayments: (studentId, params = {}) => deduplicatedGet('payments/', { params: { student_id: studentId, ...params } }),
+    getTutorPayments: (tutorId, params = {}) => deduplicatedGet('payments/', { params: { tutor_id: tutorId, ...params } }),
     createPayment: (data) => api.post('payments/', data),
 };
 

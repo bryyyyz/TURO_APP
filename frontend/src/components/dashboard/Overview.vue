@@ -29,6 +29,13 @@
       </button>
     </div>
 
+    <!-- Main Content Container -->
+    <div v-if="loading" class="overview-loading">
+      <div class="spinner"></div>
+      <p>Loading your dashboard...</p>
+    </div>
+
+    <template v-else>
     <!-- Stats grid -->
     <div class="stats-grid">
       <div class="stat-card" v-for="s in stats" :key="s.label" :class="s.cls">
@@ -181,6 +188,7 @@
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -368,7 +376,11 @@ const handleDecline = async (id) => {
 
 
 <style scoped>
-.overview-container { display: flex; flex-direction: column; gap: 2.5rem; }
+.overview-container { display: flex; flex-direction: column; gap: 2.5rem; min-height: 50vh; }
+
+.overview-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; color: #64748b; font-weight: 600; }
+.spinner { width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top-color: #f59e0b; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
 
 /* Desktop-only Helpers */
 .desktop-only { display: block; }

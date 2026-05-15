@@ -806,6 +806,7 @@ async function selectTutor(tutorId) {
 }
 
 const loadPosts = async () => {
+  if (!props.profile?.user) return; // wait for profile to load
   loading.value = true;
   try {
     const prov = String(props.profile?.province || '').trim();
