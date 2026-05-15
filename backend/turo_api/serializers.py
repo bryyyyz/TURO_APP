@@ -323,6 +323,19 @@ class MessageSerializer(serializers.ModelSerializer):
                   'sender_name', 'receiver_name', 'sender_avatar_url', 'receiver_avatar_url',
                   'content', 'timestamp', 'is_read')
 
+    def validate_content(self, value):
+        import re
+        # Censor email addresses
+        email_pattern = r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
+        value = re.sub(email_pattern, '[EMAIL REMOVED]', value)
+        
+        # Censor Philippine mobile numbers
+        # Matches: 09xx... or +639xx... or 639xx... with optional spaces/dashes
+        phone_pattern = r'(?:\+63|63|0)[-\s]?9\d{2}[-\s]?\d{3}[-\s]?\d{4}'
+        value = re.sub(phone_pattern, '[NUMBER REMOVED]', value)
+        
+        return value
+
     def _profile_name(self, user):
         try:
             p = user.profile
