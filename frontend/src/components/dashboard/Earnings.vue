@@ -4,7 +4,7 @@
     <!-- Desktop Header -->
     <div class="page-header desktop-only">
       <h1>Earnings</h1>
-      <p>Track your revenue, payouts, and rate configuration.</p>
+      <p>Track your revenue, payouts, and payout settings.</p>
     </div>
 
     <!-- Stats Grid -->
@@ -43,7 +43,7 @@
       </div>
     </div>
 
-    <!-- Chart + Rate Config -->
+    <!-- Chart + Payout Settings -->
     <div class="revenue-row">
       <div class="chart-card">
         <div class="card-header">
@@ -73,22 +73,43 @@
         </div>
       </div>
 
+      <!-- Payout Settings Card -->
       <div class="rate-card">
-        <h3>Rate Config</h3>
-        <div class="rate-content">
+        <h3>Payout Settings</h3>
+
+        <!-- View Mode -->
+        <div v-if="!editingPayout" class="rate-content">
           <div class="rate-item">
-            <span class="label">Hourly Rate</span>
-            <span class="value gold">₱{{ hourlyRate }}/hr</span>
+            <span class="label">GCash Number</span>
+            <span class="value gold">{{ maskedGcash || 'Not set' }}</span>
           </div>
           <div class="rate-item">
-            <span class="label">Platform Fee</span>
-            <span class="value orange">{{ platformFeePercent }}%</span>
+            <span class="label">Billing Name</span>
+            <span class="value">{{ billingDisplayName }}</span>
           </div>
-          <div class="rate-item total">
-            <span class="label">Net Rate</span>
-            <span class="value green">₱{{ netRate }}/hr</span>
+          <div class="rate-item">
+            <span class="label">Avg Hourly Rate</span>
+            <span class="value green">₱{{ hourlyRate }}/hr</span>
           </div>
-          <button class="btn-update">Update Rate</button>
+          <button class="btn-update" @click="startEditPayout">Edit Payout Info</button>
+        </div>
+
+        <!-- Edit Mode -->
+        <div v-else class="payout-edit">
+          <div class="form-group">
+            <label>GCash Number</label>
+            <input type="text" v-model="gcashEdit" placeholder="e.g. 09171234567" maxlength="13" />
+          </div>
+          <div class="form-group">
+            <label>Billing Name</label>
+            <input type="text" v-model="billingNameEdit" placeholder="Full name for payouts" />
+          </div>
+          <div class="edit-actions">
+            <button class="btn-save" @click="savePayoutInfo" :disabled="savingPayout">
+              {{ savingPayout ? 'Saving...' : 'Save' }}
+            </button>
+            <button class="btn-cancel-edit" @click="editingPayout = false">Cancel</button>
+          </div>
         </div>
       </div>
     </div>
@@ -101,6 +122,7 @@
 
       <!-- Mobile: Card List -->
       <div class="payout-card-list mobile-only">
+        <div v-if="payoutList.length === 0" class="empty-state-small"><p>No payouts yet.</p></div>
         <div class="payout-item" v-for="p in payoutList" :key="p.id">
           <img :src="p.avatar" alt="" class="mini-avatar" />
           <div class="payout-info">
@@ -116,7 +138,7 @@
 
       <!-- Desktop: Table -->
       <div class="table-container desktop-only">
-        <table class="payout-table">
+        <table class="payout-table" v-if="payoutList.length > 0">
           <thead>
             <tr><th>STUDENT / SUBJECT</th><th>DATE</th><th>AMOUNT</th><th>STATUS</th></tr>
           </thead>
@@ -134,10 +156,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <div class="table-footer">
-        <a href="#" class="view-all">View all payout history →</a>
+        <div v-else class="empty-state-small"><p>No payouts yet.</p></div>
       </div>
     </div>
 
@@ -146,17 +165,41 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue';
-import { paymentService, postService } from '../../services/api';
+import { paymentService, postService, profileService } from '../../services/api';
 import { REFRESH_TRIGGER } from '../../symbols/injectionKeys';
 import { formatCurrency } from '../../utils/format';
+import { useToast } from '../../composables/useToast';
 
 const props = defineProps({ profile: Object });
+const emit = defineEmits(['profile-updated']);
+const { showToast } = useToast();
 
 const payments = ref([]);
 const posts    = ref([]);
 const loading  = ref(false);
 const refreshTrigger = inject(REFRESH_TRIGGER, null);
 
+// ── Edit state ──
+const editingPayout = ref(false);
+const gcashEdit = ref('');
+const billingNameEdit = ref('');
+const savingPayout = ref(false);
+
+// ── Computed ──
+const maskedGcash = computed(() => {
+  const g = props.profile?.gcash_number || '';
+  if (g.length < 6) return g || '';
+  return g.slice(0, 4) + ' ••• ' + g.slice(-2);
+});
+
+const billingDisplayName = computed(() => {
+  if (props.profile?.billing_name) return props.profile.billing_name;
+  const first = (props.profile?.first_name || '').trim();
+  const last = (props.profile?.last_name || '').trim();
+  return `${first} ${last}`.trim() || 'Not set';
+});
+
+// ── Data loading ──
 async function fetchEarnings() {
   const p = props.profile;
   if (p?.user) {
@@ -217,60 +260,37 @@ const hourlyRate = computed(() => {
   return parseFloat(posts.value[0].hourly_rate || 0);
 });
 
-const platformFeePercent = ref(10); // Standard 10%
-const platformFeeAmount = computed(() => (hourlyRate.value * (platformFeePercent.value / 100)));
-const netRate = computed(() => formatCurrency(hourlyRate.value - platformFeeAmount.value));
-
 const MONTH_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 const chartData = computed(() => {
   const now = new Date();
   const last6Months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-    return {
-      month: d.getMonth(),
-      year: d.getFullYear(),
-      label: MONTH_NAMES[d.getMonth()],
-      earnings: 0,
-      payouts: 0
-    };
+    return { month: d.getMonth(), year: d.getFullYear(), label: MONTH_NAMES[d.getMonth()], earnings: 0, payouts: 0 };
   });
-
   payments.value.forEach(p => {
     const d = new Date(p.paid_at || p.booking_date);
-    const m = d.getMonth();
-    const y = d.getFullYear();
-    const found = last6Months.find(x => x.month === m && x.year === y);
+    const found = last6Months.find(x => x.month === d.getMonth() && x.year === d.getFullYear());
     if (found) {
       if (p.status === 'completed') found.earnings += parseFloat(p.amount || 0);
       else if (p.status === 'pending') found.payouts += parseFloat(p.amount || 0);
     }
   });
-
   return last6Months;
 });
 
 const bluePoints = computed(() => {
   const max = Math.max(...chartData.value.map(d => d.earnings), 1000);
-  return chartData.value.map((d, i) => ({
-    x: 50 + i * 100,
-    y: 170 - (d.earnings / max) * 100
-  }));
+  return chartData.value.map((d, i) => ({ x: 50 + i * 100, y: 170 - (d.earnings / max) * 100 }));
 });
-
 const goldPoints = computed(() => {
   const max = Math.max(...chartData.value.map(d => d.payouts), 1000);
-  return chartData.value.map((d, i) => ({
-    x: 50 + i * 100,
-    y: 170 - (d.payouts / max) * 100
-  }));
+  return chartData.value.map((d, i) => ({ x: 50 + i * 100, y: 170 - (d.payouts / max) * 100 }));
 });
-
 const bluePath = computed(() => {
   if (bluePoints.value.length < 2) return '';
   return `M ${bluePoints.value.map(p => `${p.x} ${p.y}`).join(' L ')}`;
 });
-
 const goldPath = computed(() => {
   if (goldPoints.value.length < 2) return '';
   return `M ${goldPoints.value.map(p => `${p.x} ${p.y}`).join(' L ')}`;
@@ -289,6 +309,32 @@ const payoutList = computed(() =>
     avatar: p.student_avatar_url || '/images/student_avatar.png',
   }))
 );
+
+// ── Edit Payout ──
+function startEditPayout() {
+  gcashEdit.value = props.profile?.gcash_number || '';
+  billingNameEdit.value = props.profile?.billing_name || billingDisplayName.value;
+  editingPayout.value = true;
+}
+
+async function savePayoutInfo() {
+  if (!props.profile?.id) return;
+  savingPayout.value = true;
+  try {
+    const patch = {
+      gcash_number: gcashEdit.value.trim(),
+      billing_name: billingNameEdit.value.trim(),
+    };
+    await profileService.updateProfile(props.profile.id, patch);
+    emit('profile-updated', patch);
+    showToast('Payout settings saved!', 'success');
+    editingPayout.value = false;
+  } catch (e) {
+    showToast('Failed to save payout settings', 'error');
+  } finally {
+    savingPayout.value = false;
+  }
+}
 </script>
 
 <style scoped>
@@ -335,12 +381,25 @@ const payoutList = computed(() =>
 .rate-content { display: flex; flex-direction: column; gap: 0.75rem; }
 .rate-item { display: flex; flex-direction: column; gap: 0.3rem; padding: 1rem; background: #fdfdfd; border: 1px solid #f8fafc; border-radius: 0.85rem; }
 .rate-item .label { font-size: 0.8rem; font-weight: 700; color: #64748b; }
-.rate-item .value { font-size: 1.15rem; font-weight: 800; }
+.rate-item .value { font-size: 1.15rem; font-weight: 800; color: #0f172a; }
 .value.gold { color: #f59e0b; }
-.value.orange { color: #d97706; }
 .value.green { color: #10b981; }
-.rate-item.total { background: #fffcf0; border-color: #fef3c7; }
-.btn-update { background: #fffcf0; border: 1.5px solid #fef3c7; color: #d97706; padding: 0.75rem; border-radius: 0.75rem; font-weight: 800; font-size: 0.85rem; cursor: pointer; width: 100%; margin-top: 0.25rem; }
+.btn-update { background: #fffcf0; border: 1.5px solid #fef3c7; color: #d97706; padding: 0.75rem; border-radius: 0.75rem; font-weight: 800; font-size: 0.85rem; cursor: pointer; width: 100%; margin-top: 0.25rem; transition: all 0.2s; }
+.btn-update:hover { background: #fef3c7; }
+
+/* Edit form */
+.payout-edit { display: flex; flex-direction: column; gap: 1rem; }
+.form-group label { display: block; font-size: 0.82rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem; }
+.form-group input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-size: 0.9rem; outline: none; background: #fdfdfd; transition: border-color 0.2s; }
+.form-group input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+.edit-actions { display: flex; gap: 0.75rem; }
+.btn-save { background: linear-gradient(135deg, #1e3a8a 0%, #2d52a0 100%); color: #fff; border: none; padding: 0.65rem 1.5rem; border-radius: 0.65rem; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; }
+.btn-save:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,58,138,0.25); }
+.btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-cancel-edit { background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 0.65rem 1.5rem; border-radius: 0.65rem; font-weight: 800; font-size: 0.82rem; color: #64748b; cursor: pointer; }
+
+.empty-state-small { text-align: center; padding: 1.5rem; }
+.empty-state-small p { color: #94a3b8; font-size: 0.85rem; font-weight: 600; }
 
 /* Payout */
 .payout-card { background: #fff; border-radius: 1.25rem; padding: 1.5rem; border: 1px solid #f1f5f9; }
@@ -359,8 +418,6 @@ const payoutList = computed(() =>
 .status-pill { padding: 0.25rem 0.65rem; border-radius: 0.45rem; font-size: 0.65rem; font-weight: 800; display: inline-block; }
 .status-pill.paid { background: #ecfdf5; color: #059669; }
 .status-pill.pending { background: #fffbeb; color: #d97706; }
-.table-footer { margin-top: 1.25rem; text-align: center; }
-.view-all { font-size: 0.82rem; font-weight: 700; color: #3b82f6; text-decoration: none; }
 
 /* ── MOBILE ── */
 @media (max-width: 768px) {

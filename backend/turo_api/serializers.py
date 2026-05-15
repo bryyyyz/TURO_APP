@@ -33,6 +33,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                   'id_photo', 'id_photo_url', 'requires_id_verification', 'id_verification_status',
                   'first_name', 'last_name', 'middle_name', 'name_extension',
                   'barangay', 'municipality', 'province',
+                  'gcash_number', 'billing_name',
                   'email', 'username')
 
     def _abs(self, request, url: str | None):

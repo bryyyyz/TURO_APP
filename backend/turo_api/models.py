@@ -45,6 +45,8 @@ class Profile(models.Model):
     id_verification_status = models.CharField(
         max_length=20, choices=ID_VERIFICATION_STATUS_CHOICES, default='not_submitted'
     )
+    gcash_number = models.CharField(max_length=20, blank=True)
+    billing_name = models.CharField(max_length=200, blank=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.role}"

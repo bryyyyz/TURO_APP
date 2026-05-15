@@ -14,8 +14,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
         </div>
         <span class="stat-label">This Month</span>
-        <h2 class="stat-value">₱{{ totalSpent }}</h2>
-        <span class="stat-trend trend-up">All time</span>
+        <h2 class="stat-value">₱{{ thisMonthSpent }}</h2>
+        <span class="stat-trend trend-up">Current month</span>
       </div>
       <div class="stat-card bg-blue">
         <div class="stat-icon-wrap">
@@ -45,41 +45,72 @@
 
     <!-- Payment Grid: methods + billing -->
     <div class="payment-grid">
+      <!-- Payment Methods Card -->
       <div class="card methods-card">
         <div class="card-header">
           <h3>Payment Methods</h3>
-          <button class="btn-action">+ Add</button>
         </div>
-        <div class="methods-list">
-          <div class="method-item">
-            <div class="card-brand visa">VISA</div>
+
+        <!-- View Mode -->
+        <div v-if="!editingMethods" class="methods-list">
+          <div class="method-item" v-if="profile?.gcash_number">
+            <div class="card-brand gcash">GCash</div>
             <div class="method-info">
-              <strong>•••• 4242</strong>
-              <span>Expires 06/27 · Jayson Dela Cruz</span>
+              <strong>{{ maskedGcash }}</strong>
+              <span>GCash Wallet · Linked</span>
             </div>
             <span class="badge-default">Default</span>
           </div>
-          <div class="method-item">
-            <div class="card-brand gcash">GCash</div>
-            <div class="method-info">
-              <strong>+63 991 ••89</strong>
-              <span>GCash Wallet · Linked</span>
-            </div>
-            <button class="btn-text">Manage</button>
+          <div v-else class="empty-state-small">
+            <p>No payment method linked yet.</p>
+          </div>
+          <button class="btn-action mt-sm" @click="startEditMethods">
+            {{ profile?.gcash_number ? 'Edit' : '+ Add GCash' }}
+          </button>
+        </div>
+
+        <!-- Edit Mode -->
+        <div v-else class="methods-edit">
+          <div class="form-group">
+            <label>GCash Number</label>
+            <input type="text" v-model="gcashEdit" placeholder="e.g. 09171234567" maxlength="13" />
+          </div>
+          <div class="edit-actions">
+            <button class="btn-save" @click="saveMethods" :disabled="savingMethods">
+              {{ savingMethods ? 'Saving...' : 'Save' }}
+            </button>
+            <button class="btn-cancel" @click="editingMethods = false">Cancel</button>
           </div>
         </div>
       </div>
 
+      <!-- Billing Info Card -->
       <div class="card billing-card">
         <div class="card-header">
           <h3>Billing Info</h3>
-          <button class="btn-action">Edit</button>
         </div>
-        <div class="billing-details">
-          <div class="detail-row"><span>Name</span><strong>Jayson Dela Cruz</strong></div>
-          <div class="detail-row"><span>Email</span><strong>jayson@example.com</strong></div>
+
+        <!-- View Mode -->
+        <div v-if="!editingBilling" class="billing-details">
+          <div class="detail-row"><span>Name</span><strong>{{ billingDisplayName }}</strong></div>
+          <div class="detail-row"><span>Email</span><strong>{{ profile?.email || 'Not set' }}</strong></div>
           <div class="detail-row"><span>Country</span><strong>Philippines</strong></div>
           <div class="detail-row"><span>Currency</span><strong>₱ PHP</strong></div>
+          <button class="btn-action mt-sm" @click="startEditBilling">Edit</button>
+        </div>
+
+        <!-- Edit Mode -->
+        <div v-else class="billing-edit">
+          <div class="form-group">
+            <label>Billing Name</label>
+            <input type="text" v-model="billingNameEdit" placeholder="Full name for billing" />
+          </div>
+          <div class="edit-actions">
+            <button class="btn-save" @click="saveBilling" :disabled="savingBilling">
+              {{ savingBilling ? 'Saving...' : 'Save' }}
+            </button>
+            <button class="btn-cancel" @click="editingBilling = false">Cancel</button>
+          </div>
         </div>
       </div>
     </div>
@@ -95,6 +126,7 @@
 
       <!-- Mobile: Card list -->
       <div class="tx-card-list mobile-only">
+        <div v-if="transactions.length === 0" class="empty-state-small"><p>No transactions yet.</p></div>
         <div class="tx-card" v-for="tx in transactions" :key="tx.id">
           <div class="tx-icon" :style="{ background: tx.color + '18', color: tx.color }">{{ tx.initial }}</div>
           <div class="tx-details">
@@ -110,7 +142,7 @@
 
       <!-- Desktop: Table -->
       <div class="table-container desktop-only">
-        <table class="history-table">
+        <table class="history-table" v-if="transactions.length > 0">
           <thead>
             <tr><th>DESCRIPTION</th><th>DATE</th><th>STATUS</th><th>AMOUNT</th></tr>
           </thead>
@@ -128,10 +160,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <div class="table-footer">
-        <button class="btn-view-all">View all history →</button>
+        <div v-else class="empty-state-small"><p>No transactions yet.</p></div>
       </div>
     </div>
 
@@ -140,14 +169,40 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { paymentService } from '../../services/api';
+import { paymentService, profileService } from '../../services/api';
 import { formatCurrency } from '../../utils/format';
+import { useToast } from '../../composables/useToast';
 
 const props = defineProps({ profile: Object });
+const emit = defineEmits(['profile-updated']);
+const { showToast } = useToast();
 
 const payments = ref([]);
 const loading = ref(false);
 
+// ── Edit state ──
+const editingMethods = ref(false);
+const editingBilling = ref(false);
+const gcashEdit = ref('');
+const billingNameEdit = ref('');
+const savingMethods = ref(false);
+const savingBilling = ref(false);
+
+// ── Computed ──
+const maskedGcash = computed(() => {
+  const g = props.profile?.gcash_number || '';
+  if (g.length < 6) return g || '—';
+  return g.slice(0, 4) + ' ••• ' + g.slice(-2);
+});
+
+const billingDisplayName = computed(() => {
+  if (props.profile?.billing_name) return props.profile.billing_name;
+  const first = (props.profile?.first_name || '').trim();
+  const last = (props.profile?.last_name || '').trim();
+  return `${first} ${last}`.trim() || 'Not set';
+});
+
+// ── Data loading ──
 watch(() => props.profile, async (p) => {
   if (p?.user) {
     loading.value = true;
@@ -166,6 +221,20 @@ const totalSpent = computed(() =>
   formatCurrency(payments.value.reduce((s, p) => s + parseFloat(p.amount || 0), 0))
 );
 
+const thisMonthSpent = computed(() => {
+  const now = new Date();
+  const m = now.getMonth();
+  const y = now.getFullYear();
+  return formatCurrency(
+    payments.value
+      .filter(p => {
+        const d = new Date(p.paid_at || p.booking_date);
+        return d.getMonth() === m && d.getFullYear() === y;
+      })
+      .reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+  );
+});
+
 const sessionCount = computed(() => payments.value.length);
 
 const transactions = computed(() =>
@@ -182,6 +251,47 @@ const transactions = computed(() =>
     color: '#1e3a8a',
   }))
 );
+
+// ── Edit Methods ──
+function startEditMethods() {
+  gcashEdit.value = props.profile?.gcash_number || '';
+  editingMethods.value = true;
+}
+
+async function saveMethods() {
+  if (!props.profile?.id) return;
+  savingMethods.value = true;
+  try {
+    await profileService.updateProfile(props.profile.id, { gcash_number: gcashEdit.value.trim() });
+    emit('profile-updated', { gcash_number: gcashEdit.value.trim() });
+    showToast('Payment method saved!', 'success');
+    editingMethods.value = false;
+  } catch (e) {
+    showToast('Failed to save payment method', 'error');
+  } finally {
+    savingMethods.value = false;
+  }
+}
+
+function startEditBilling() {
+  billingNameEdit.value = props.profile?.billing_name || billingDisplayName.value;
+  editingBilling.value = true;
+}
+
+async function saveBilling() {
+  if (!props.profile?.id) return;
+  savingBilling.value = true;
+  try {
+    await profileService.updateProfile(props.profile.id, { billing_name: billingNameEdit.value.trim() });
+    emit('profile-updated', { billing_name: billingNameEdit.value.trim() });
+    showToast('Billing info saved!', 'success');
+    editingBilling.value = false;
+  } catch (e) {
+    showToast('Failed to save billing info', 'error');
+  } finally {
+    savingBilling.value = false;
+  }
+}
 </script>
 
 <style scoped>
@@ -190,6 +300,7 @@ const transactions = computed(() =>
 /* Helpers */
 .desktop-only { display: block; }
 .mobile-only { display: none; }
+.mt-sm { margin-top: 0.75rem; }
 
 /* Desktop Header */
 .page-header h1 { font-family: var(--font-display); font-size: 2rem; font-weight: 800; color: #0f172a; }
@@ -216,25 +327,38 @@ const transactions = computed(() =>
 .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
 .card-header h3 { font-size: 1rem; font-weight: 800; color: #0f172a; }
 .card-header p { font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem; }
-.btn-action { background: #f8fafc; border: 1.5px solid #f1f5f9; padding: 0.45rem 0.85rem; border-radius: 0.65rem; font-weight: 800; font-size: 0.78rem; color: #0f172a; cursor: pointer; }
+.btn-action { background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 0.5rem 1rem; border-radius: 0.65rem; font-weight: 800; font-size: 0.78rem; color: #0f172a; cursor: pointer; transition: all 0.2s; }
+.btn-action:hover { background: #f1f5f9; border-color: #cbd5e1; }
 
 /* Payment Grid */
 .payment-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.25rem; }
 .methods-list { display: flex; flex-direction: column; gap: 0.85rem; }
 .method-item { display: flex; align-items: center; padding: 1rem; background: #fbfcfd; border: 1px solid #f1f5f9; border-radius: 1rem; gap: 1rem; }
 .card-brand { width: 52px; height: 32px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.72rem; color: #fff; flex-shrink: 0; }
-.card-brand.visa { background: #1a1f71; }
 .card-brand.gcash { background: #3b82f6; }
 .method-info { flex: 1; }
 .method-info strong { font-size: 0.9rem; color: #0f172a; font-weight: 800; display: block; }
 .method-info span { font-size: 0.72rem; color: #94a3b8; font-weight: 600; }
 .badge-default { background: #f0fdf4; color: #16a34a; font-size: 0.65rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 0.4rem; white-space: nowrap; }
-.btn-text { background: none; border: none; color: #3b82f6; font-weight: 800; font-size: 0.78rem; cursor: pointer; }
+
+/* Edit Forms */
+.methods-edit, .billing-edit { display: flex; flex-direction: column; gap: 1rem; }
+.form-group label { display: block; font-size: 0.82rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem; }
+.form-group input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 0.75rem; font-size: 0.9rem; outline: none; background: #fdfdfd; transition: border-color 0.2s; }
+.form-group input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+.edit-actions { display: flex; gap: 0.75rem; }
+.btn-save { background: linear-gradient(135deg, #1e3a8a 0%, #2d52a0 100%); color: #fff; border: none; padding: 0.65rem 1.5rem; border-radius: 0.65rem; font-weight: 800; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; }
+.btn-save:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(30,58,138,0.25); }
+.btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-cancel { background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 0.65rem 1.5rem; border-radius: 0.65rem; font-weight: 800; font-size: 0.82rem; color: #64748b; cursor: pointer; }
 
 .billing-details { display: flex; flex-direction: column; gap: 1rem; }
 .detail-row { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.85rem; border-bottom: 1px solid #f8fafc; }
 .detail-row span { font-size: 0.72rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
 .detail-row strong { font-size: 0.88rem; font-weight: 800; color: #0f172a; }
+
+.empty-state-small { text-align: center; padding: 1.5rem; }
+.empty-state-small p { color: #94a3b8; font-size: 0.85rem; font-weight: 600; }
 
 /* History Table (Desktop) */
 .table-container { overflow-x: auto; }
@@ -250,8 +374,6 @@ const transactions = computed(() =>
 .status-pill { padding: 0.25rem 0.7rem; border-radius: 0.5rem; font-size: 0.65rem; font-weight: 800; }
 .status-pill.paid { background: #f0fdf4; color: #16a34a; }
 .amount-cell { font-size: 1.05rem; font-weight: 800; color: #0f172a; }
-.table-footer { margin-top: 1.5rem; display: flex; justify-content: center; }
-.btn-view-all { background: #f8fafc; border: 1.5px solid #f1f5f9; color: #3b82f6; padding: 0.65rem 1.75rem; border-radius: 0.85rem; font-weight: 800; font-size: 0.82rem; cursor: pointer; }
 
 /* ── MOBILE ── */
 @media (max-width: 768px) {
