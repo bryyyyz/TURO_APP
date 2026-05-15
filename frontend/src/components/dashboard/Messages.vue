@@ -81,11 +81,11 @@
           </div>
           <div
             v-for="msg in thread" :key="msg.id"
-            :class="['message-row', msg.sender_user_id === myUserId ? 'me' : 'them']"
+            :class="['message-row', Number(msg.sender_user_id) === Number(myUserId) ? 'me' : 'them']"
           >
             <div
               class="msg-avatar"
-              v-if="msg.sender_user_id !== myUserId"
+              v-if="Number(msg.sender_user_id) !== Number(myUserId)"
               :style="{ backgroundColor: getColor(msg.sender_user_id) }"
             >
               {{ initials(msg.sender_name) }}
