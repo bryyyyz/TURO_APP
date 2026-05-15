@@ -124,12 +124,7 @@
       </footer>
     </main>
 
-    <!-- ══ ID VERIFICATION MODAL (For new users) ══ -->
-    <IdVerificationModal
-      v-if="profile?.requires_id_verification"
-      :profile="profile"
-      @submitted="onIdSubmitted"
-    />
+    <!-- Removed ID VERIFICATION MODAL (Now optional via Profile settings) -->
 
     <!-- ══ MOBILE BOTTOM NAV (Only visible on mobile) ══ -->
     <nav class="bottom-nav">
@@ -229,7 +224,6 @@ import Students from '../components/dashboard/Students.vue';
 import Earnings from '../components/dashboard/Earnings.vue';
 import Messages from '../components/dashboard/Messages.vue';
 import TutorProfile from '../components/dashboard/TutorProfile.vue';
-import IdVerificationModal from '../components/dashboard/IdVerificationModal.vue';
 import { TuroIcon } from '../components/icons';
 import DashboardActivityPanel from '../components/DashboardActivityPanel.vue';
 import { buildTutorActivities } from '../utils/buildDashboardActivity';

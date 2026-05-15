@@ -2,6 +2,7 @@
   <div class="id-modal-overlay">
     <div class="id-modal-content">
       <div class="modal-header">
+        <button class="btn-close-modal" @click="$emit('close')">✕</button>
         <div class="shield-icon">🛡️</div>
         <h2>Verify Your Identity</h2>
       </div>
@@ -41,7 +42,7 @@ const props = defineProps({
   profile: Object
 });
 
-const emit = defineEmits(['submitted']);
+const emit = defineEmits(['submitted', 'close']);
 
 const { showToast } = useToast();
 const fileInput = ref(null);
@@ -100,9 +101,18 @@ async function submitId() {
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
 .modal-header {
+  position: relative;
   background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #fff;
   padding: 2.5rem 2rem 1.5rem; text-align: center;
 }
+.btn-close-modal {
+  position: absolute; top: 1rem; right: 1rem;
+  background: rgba(255,255,255,0.1); border: none; color: #fff;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; cursor: pointer; transition: background 0.2s;
+}
+.btn-close-modal:hover { background: rgba(255,255,255,0.25); }
 .shield-icon { font-size: 3rem; margin-bottom: 0.5rem; line-height: 1; }
 .modal-header h2 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; margin: 0; }
 

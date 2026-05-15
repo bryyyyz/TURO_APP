@@ -157,6 +157,46 @@
         </div>
       </section>
 
+      <!-- ── ID Verification ── -->
+      <section class="profile-section">
+        <div class="section-header">
+          <div class="header-left">
+            <div class="section-icon accent" style="background: linear-gradient(135deg, #e0e7ff, #c7d2fe);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div>
+              <h2>Identity Verification</h2>
+              <p>Verify your identity to unlock posting features</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-display-full">
+          <div v-if="form.id_verification_status === 'approved'" class="id-status approved">
+            <div class="status-icon">✅</div>
+            <div>
+              <strong>ID Verified</strong>
+              <p>Your identity has been successfully verified.</p>
+            </div>
+          </div>
+          <div v-else-if="form.id_verification_status === 'pending'" class="id-status pending">
+            <div class="status-icon">⏳</div>
+            <div>
+              <strong>Verification Pending</strong>
+              <p>Your ID is currently being reviewed by our administrators.</p>
+            </div>
+          </div>
+          <div v-else class="id-status not-submitted">
+            <div class="status-icon">⚠️</div>
+            <div class="status-content">
+              <strong>Verification Required to Publish Listings</strong>
+              <p>You must upload a valid Government or Student ID before you can publish tutoring services.</p>
+              <button class="btn-verify" @click="showIdModal = true">Upload ID Now</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ── Teaching Bio ── -->
       <section class="profile-section">
         <div class="section-header">
@@ -358,6 +398,13 @@
       </div>
     </div>
   </Teleport>
+
+  <IdVerificationModal
+    v-if="showIdModal"
+    :profile="form"
+    @submitted="onIdSubmitted"
+    @close="showIdModal = false"
+  />
 </template>
 
 <script setup>
@@ -366,6 +413,7 @@ import { supabase } from '../../supabase';
 import { bookingService, profileService, postService, formatApiErrorMessage } from '../../services/api';
 import { useToast } from '../../composables/useToast';
 import LocationPicker from './LocationPicker.vue';
+import IdVerificationModal from './IdVerificationModal.vue';
 
 const props = defineProps({ profile: Object });
 const emit = defineEmits(['profile-updated']);
@@ -373,6 +421,7 @@ const { showToast } = useToast();
 
 const isEditing = ref(false);
 const saving = ref(false);
+const showIdModal = ref(false);
 const djangoProfileId = ref(null);
 const subjectTags = ref([]);
 
@@ -384,6 +433,8 @@ const form = ref({
   tier_review_submitted_at: null,
   credentials_document_url: '',
   credentials_documents: [],
+  id_verification_status: '',
+  id_photo_url: '',
 });
 
 const avatarFile = ref(null);
@@ -563,6 +614,8 @@ const populateFromProp = (p) => {
   form.value.tier_review_submitted_at = p.tier_review_submitted_at || null;
   form.value.credentials_document_url = p.credentials_document_url || '';
   form.value.credentials_documents = Array.isArray(p.credentials_documents) ? p.credentials_documents : [];
+  form.value.id_verification_status = p.id_verification_status || '';
+  form.value.id_photo_url = p.id_photo_url || '';
   tierAchievements.value = form.value.achievements || '';
 };
 
@@ -821,6 +874,15 @@ const activateTierUpgrade = async () => {
   } finally {
     tierSubmitting.value = false;
   }
+};
+
+const onIdSubmitted = (updatedProfile) => {
+  if (updatedProfile) {
+    form.value.id_verification_status = updatedProfile.id_verification_status;
+    form.value.id_photo_url = updatedProfile.id_photo_url;
+    emit('profile-updated', { ...form.value });
+  }
+  showIdModal.value = false;
 };
 </script>
 
@@ -1126,6 +1188,21 @@ const activateTierUpgrade = async () => {
 .btn-confirm-pay { border: 1px solid #0f172a; background: #0f172a; color: #fff; }
 .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ID Verification Status */
+.id-status { display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem; border-radius: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; }
+.id-status .status-icon { font-size: 1.5rem; line-height: 1; margin-top: 0.1rem; }
+.id-status strong { color: #0f172a; font-size: 0.95rem; font-weight: 800; display: block; margin-bottom: 0.25rem; }
+.id-status p { margin: 0; color: #475569; font-size: 0.85rem; line-height: 1.5; }
+.id-status.approved { background: #f0fdf4; border-color: #bbf7d0; }
+.id-status.approved strong { color: #166534; }
+.id-status.pending { background: #eff6ff; border-color: #bfdbfe; }
+.id-status.pending strong { color: #1e40af; }
+.id-status.not-submitted { background: #fffbeb; border-color: #fde68a; }
+.id-status.not-submitted strong { color: #92400e; }
+.btn-verify { margin-top: 1rem; padding: 0.6rem 1.2rem; background: #0f172a; color: #fff; border: none; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+.btn-verify:hover { background: #1e293b; }
+
 @media (max-width: 768px) {
   .hero-content { padding: 1.5rem; gap: 1rem; }
   .avatar-circle { width: 64px; height: 64px; font-size: 1.4rem; }

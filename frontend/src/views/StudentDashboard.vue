@@ -117,12 +117,7 @@
       </footer>
     </main>
 
-    <!-- ══ ID VERIFICATION MODAL (For new users) ══ -->
-    <IdVerificationModal
-      v-if="profile?.requires_id_verification"
-      :profile="profile"
-      @submitted="onIdSubmitted"
-    />
+    <!-- Removed ID VERIFICATION MODAL (Now optional via Profile settings) -->
 
     <!-- ══ MOBILE BOTTOM NAV (Only visible on mobile) ══ -->
     <nav class="bottom-nav">
@@ -220,7 +215,6 @@ import StudentSessions from '../components/dashboard/StudentSessions.vue';
 import Messages from '../components/dashboard/Messages.vue';
 import StudentPayments from '../components/dashboard/StudentPayments.vue';
 import StudentProfile from '../components/dashboard/StudentProfile.vue';
-import IdVerificationModal from '../components/dashboard/IdVerificationModal.vue';
 import { TuroIcon } from '../components/icons';
 import DashboardActivityPanel from '../components/DashboardActivityPanel.vue';
 import { buildStudentActivities } from '../utils/buildDashboardActivity';
@@ -288,7 +282,6 @@ function openLogoutModal() {
 
 const onIdSubmitted = (updatedProfile) => {
   if (profile.value && updatedProfile) {
-    profile.value.requires_id_verification = updatedProfile.requires_id_verification;
     profile.value.id_verification_status = updatedProfile.id_verification_status;
     profile.value.id_photo_url = updatedProfile.id_photo_url;
   }
