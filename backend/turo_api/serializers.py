@@ -330,8 +330,8 @@ class MessageSerializer(serializers.ModelSerializer):
         value = re.sub(email_pattern, '[EMAIL REMOVED]', value)
         
         # Censor Philippine mobile numbers
-        # Matches: 09xx... or +639xx... or 639xx... with optional spaces/dashes
-        phone_pattern = r'(?:\+63|63|0)[-\s]?9\d{2}[-\s]?\d{3}[-\s]?\d{4}'
+        # Matches: 0 or 63 or +63 followed by exactly 10 digits (ignoring spaces/dashes)
+        phone_pattern = r'(?:\+63|63|0)(?:[-\s]*\d){10}'
         value = re.sub(phone_pattern, '[NUMBER REMOVED]', value)
         
         return value

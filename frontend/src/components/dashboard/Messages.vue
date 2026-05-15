@@ -290,8 +290,15 @@ function scrollToBottom() {
 
 // ── Send ───────────────────────────────────────────────────────────────
 async function sendMessage() {
-  const text = newMessage.value.trim();
+  let text = newMessage.value.trim();
   if (!text || !myUserId.value || !activeOtherUserId.value || sending.value) return;
+  
+  // Client-side censoring for immediate feedback
+  const emailPattern = /[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g;
+  const phonePattern = /(?:\+63|63|0)(?:[-\s]*\d){10}/g;
+  text = text.replace(emailPattern, '[EMAIL REMOVED]');
+  text = text.replace(phonePattern, '[NUMBER REMOVED]');
+  
   sending.value = true;
   newMessage.value = '';
   try {
