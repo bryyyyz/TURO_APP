@@ -545,29 +545,26 @@ onUnmounted(() => {
 const handleLogout = async () => {
   if (loggingOut.value) return;
   loggingOut.value = true;
-  // Clear any existing toasts to prevent double notifications
   toasts.value = [];
   try {
-    // Supabase signOut can occasionally leave a stale in-memory session until refresh.
-    // Clear local UI state and hard-redirect fallback to ensure the user is actually out.
     await supabase.auth.signOut();
-    showLogoutMenu.value = false;
-    showLogoutModal.value = false;
-    menuOpen.value = false;
-    notificationsOpen.value = false;
-    user.value = null;
-    profile.value = null;
-    showToast('Logged out successfully', 'success');
-    await router.replace('/login/tutor');
-    if (window.location.pathname.startsWith('/dashboard/')) {
-      window.location.href = '/login/tutor';
-    }
   } catch (e) {
-    console.error('Logout failed:', e);
-    // Only show error if we haven't already navigated away
-    if (window.location.pathname.startsWith('/dashboard/')) {
-      showToast('Could not log out. Please try again.', 'error');
-    }
+    console.warn('Supabase signout issue:', e);
+  }
+
+  showLogoutMenu.value = false;
+  showLogoutModal.value = false;
+  menuOpen.value = false;
+  notificationsOpen.value = false;
+  user.value = null;
+  profile.value = null;
+
+  try {
+    await router.replace('/login/tutor');
+    showToast('Logged out successfully', 'success');
+  } catch (err) {
+    // Vue router might throw NavigationDuplicated, fallback to window.location
+    window.location.href = '/login/tutor';
   } finally {
     loggingOut.value = false;
   }
