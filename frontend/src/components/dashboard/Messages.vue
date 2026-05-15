@@ -402,10 +402,10 @@ onUnmounted(() => { stopPolling(); stopInboxPolling(); });
   background: #fff;
   border: 1px solid #f1f5f9;
   border-radius: 1.5rem;
-  min-height: 540px;
+  height: calc(100vh - 220px); /* Strict bound so the chat doesn't push down the page */
+  min-height: 400px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-  flex: 1;
 }
 
 /* Sidebar */
