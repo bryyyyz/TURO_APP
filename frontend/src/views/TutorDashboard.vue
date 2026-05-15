@@ -128,7 +128,7 @@
     <IdVerificationModal
       v-if="profile?.requires_id_verification"
       :profile="profile"
-      @verified="onIdVerified"
+      @submitted="onIdSubmitted"
     />
 
     <!-- ══ MOBILE BOTTOM NAV (Only visible on mobile) ══ -->
@@ -295,9 +295,11 @@ function openLogoutModal() {
   showLogoutModal.value = true;
 }
 
-const onIdVerified = async () => {
-  if (profile.value) {
-    profile.value.requires_id_verification = false;
+const onIdSubmitted = (updatedProfile) => {
+  if (profile.value && updatedProfile) {
+    profile.value.requires_id_verification = updatedProfile.requires_id_verification;
+    profile.value.id_verification_status = updatedProfile.id_verification_status;
+    profile.value.id_photo_url = updatedProfile.id_photo_url;
   }
 };
 

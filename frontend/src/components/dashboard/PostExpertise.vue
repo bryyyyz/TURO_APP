@@ -14,6 +14,15 @@
       </div>
     </div>
 
+    <!-- ID Verification Warning -->
+    <div v-if="profile?.id_verification_status !== 'approved'" class="location-warning-banner" style="background: #fffbeb; border-color: #fde68a; color: #92400e;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #d97706;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div class="warn-content">
+        <p><strong>ID Verification Pending</strong> — Your ID is currently being reviewed by our administrators.</p>
+        <p class="warn-sub">You cannot publish new listings until your ID is approved.</p>
+      </div>
+    </div>
+
     <div class="split-layout">
       <!-- FORM -->
       <div class="form-side">
@@ -156,7 +165,7 @@
         </div>
 
         <div class="form-card" style="padding: 1.25rem;">
-          <button class="btn-publish" @click="handlePublish" :disabled="loading || !profileProvince">
+          <button class="btn-publish" @click="handlePublish" :disabled="loading || !profileProvince || profile?.id_verification_status !== 'approved'">
             {{ loading ? 'Publishing...' : 'Publish Listing →' }}
           </button>
         </div>

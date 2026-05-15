@@ -41,7 +41,7 @@ const props = defineProps({
   profile: Object
 });
 
-const emit = defineEmits(['verified']);
+const emit = defineEmits(['submitted']);
 
 const { showToast } = useToast();
 const fileInput = ref(null);
@@ -71,10 +71,11 @@ async function submitId() {
     const formData = new FormData();
     formData.append('id_photo', selectedFile.value);
     formData.append('requires_id_verification', 'false');
+    formData.append('id_verification_status', 'pending');
 
-    await profileService.updateProfile(props.profile.id, formData);
-    showToast('ID uploaded successfully!', 'success');
-    emit('verified');
+    const { data } = await profileService.updateProfile(props.profile.id, formData);
+    showToast('ID uploaded! Waiting for admin approval.', 'success');
+    emit('submitted', data);
   } catch (error) {
     console.error('Failed to upload ID:', error);
     showToast('Failed to upload ID. Please try again.', 'error');

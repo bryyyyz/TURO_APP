@@ -30,7 +30,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                   'phone', 'bio', 'achievements',
                   'credentials_document', 'credentials_document_url', 'credentials_documents',
                   'avatar', 'avatar_url',
-                  'id_photo', 'id_photo_url', 'requires_id_verification',
+                  'id_photo', 'id_photo_url', 'requires_id_verification', 'id_verification_status',
                   'first_name', 'last_name', 'middle_name', 'name_extension',
                   'barangay', 'municipality', 'province',
                   'email', 'username')

@@ -138,6 +138,9 @@ export const adminService = {
     getPendingTierRequests: () => api.get('admin/tier-requests/', { headers: getAdminAuthHeaders() }),
     reviewTierRequest: (profileId, payload) =>
         api.patch(`admin/tier-requests/${profileId}/`, payload, { headers: getAdminAuthHeaders() }),
+    getPendingIdVerifications: () => api.get('admin/id-verifications/', { headers: getAdminAuthHeaders() }),
+    reviewIdVerification: (profileId, payload) =>
+        api.patch(`admin/id-verifications/${profileId}/`, payload, { headers: getAdminAuthHeaders() }),
 };
 
 export default api;

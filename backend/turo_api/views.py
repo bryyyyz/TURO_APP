@@ -121,6 +121,18 @@ class ExpertisePostViewSet(viewsets.ModelViewSet):
 
         return qs.order_by('-created_at')
 
+    def create(self, request, *args, **kwargs):
+        tutor_id = request.data.get('tutor') or request.data.get('tutor_id')
+        if tutor_id:
+            from .models import Profile
+            profile = Profile.objects.filter(user_id=tutor_id).first()
+            if profile and profile.id_verification_status != 'approved':
+                return response.Response(
+                    {'detail': 'ID verification required to publish listings.'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        return super().create(request, *args, **kwargs)
+
 class SessionSlotViewSet(viewsets.ModelViewSet):
     queryset = SessionSlot.objects.all()
     serializer_class = SessionSlotSerializer
@@ -175,6 +187,18 @@ class BookingViewSet(viewsets.ModelViewSet):
             qs = qs[:limit_n]
 
         return qs
+
+    def create(self, request, *args, **kwargs):
+        student_id = request.data.get('student') or request.data.get('student_id')
+        if student_id:
+            from .models import Profile
+            profile = Profile.objects.filter(user_id=student_id).first()
+            if profile and profile.id_verification_status != 'approved':
+                return response.Response(
+                    {'detail': 'ID verification required to book sessions.'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         booking = serializer.save()
@@ -403,3 +427,69 @@ class AdminTierDecisionView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class AdminIdVerificationListView(APIView):
+    """Returns all profiles with a pending ID verification."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        if not _is_admin_panel_authenticated(request):
+            return response.Response({'detail': 'Unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        pending = (
+            Profile.objects.select_related('user')
+            .filter(id_verification_status='pending')
+            .order_by('-id')
+        )
+        items = []
+        for p in pending:
+            id_photo_url = None
+            if p.id_photo:
+                try:
+                    url = p.id_photo.url
+                    id_photo_url = (
+                        url if str(url).startswith(('http://', 'https://'))
+                        else request.build_absolute_uri(url)
+                    )
+                except (OSError, ValueError):
+                    pass
+            items.append({
+                'id': p.id,
+                'user_id': p.user_id,
+                'email': p.user.email,
+                'first_name': p.first_name,
+                'last_name': p.last_name,
+                'role': p.role,
+                'id_photo_url': id_photo_url,
+                'id_verification_status': p.id_verification_status,
+            })
+        return response.Response(items, status=status.HTTP_200_OK)
+
+
+class AdminIdDecisionView(APIView):
+    """Approve or reject an ID verification for a given profile."""
+    permission_classes = [permissions.AllowAny]
+
+    def patch(self, request, profile_id):
+        if not _is_admin_panel_authenticated(request):
+            return response.Response({'detail': 'Unauthorized.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        profile = Profile.objects.filter(id=profile_id).first()
+        if not profile:
+            return response.Response({'detail': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        action = (request.data.get('action') or '').strip().lower()
+        if action not in {'approve', 'reject'}:
+            return response.Response(
+                {'detail': 'Action must be approve or reject.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        profile.id_verification_status = 'approved' if action == 'approve' else 'rejected'
+        profile.save(update_fields=['id_verification_status'])
+        return response.Response({
+            'id': profile.id,
+            'id_verification_status': profile.id_verification_status,
+        }, status=status.HTTP_200_OK)
+

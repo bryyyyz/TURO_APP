@@ -9,6 +9,12 @@
       </div>
     </div>
 
+    <!-- ── ID Verification Banner ── -->
+    <div v-if="profile?.id_verification_status !== 'approved'" class="location-banner warn" style="background: #fffbeb; border-color: #fde68a; color: #92400e; margin-bottom: 1rem;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #d97706;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span><strong>ID Verification Pending</strong> — Your ID is currently being reviewed. You cannot book sessions until approved.</span>
+    </div>
+
     <!-- ── Location Scope Banner ── -->
     <div class="location-banner" v-if="profile?.province">
       <div class="loc-left">
@@ -320,10 +326,11 @@
           <button class="btn-cancel" @click="closeModal">Cancel</button>
           <button 
             class="btn-confirm-booking" 
-            :disabled="!canBook || bookingLoading"
+            :disabled="!canBook || bookingLoading || profile?.id_verification_status !== 'approved'"
             @click="goToPayment"
+            :title="profile?.id_verification_status !== 'approved' ? 'ID verification required to book' : ''"
           >
-            Proceed to Payment →
+            {{ profile?.id_verification_status !== 'approved' ? 'Verification Pending' : 'Proceed to Payment →' }}
           </button>
         </div>
       </div>
