@@ -186,9 +186,9 @@
     <!-- ══ TESTIMONIALS ══ -->
     <section class="testimonials-section" id="testimonials">
       <div class="section-header">
-        <div class="section-tag">Testimonials</div>
-        <h2>What our community says</h2>
-        <p>Real stories from students and tutors across the Philippines.</p>
+        <div class="section-tag">Success Stories</div>
+        <h2>Hear it from our community</h2>
+        <p>Real experiences from students and tutors across the Philippines.</p>
       </div>
       <div class="testimonials-grid">
         <div class="testimonial-card" v-for="t in testimonials" :key="t.name">
