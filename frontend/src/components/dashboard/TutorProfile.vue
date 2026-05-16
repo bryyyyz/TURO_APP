@@ -347,7 +347,7 @@
               :disabled="tierSubmitDisabled"
               @click="submitTierReview"
             >
-              {{ tierSubmitting ? 'Submitting...' : 'Submit Review' }}
+              {{ tierSubmitting ? 'Submitting...' : `Submit for ${nextTierLabel}` }}
             </button>
 
             <template v-if="canUpgradeAfterApproval">
@@ -365,7 +365,7 @@
                 :disabled="tierSubmitting || !paymentSimulated"
                 @click="activateTierUpgrade"
               >
-                {{ tierSubmitting ? 'Activating...' : 'Upgrade Now' }}
+                {{ tierSubmitting ? 'Activating...' : `Upgrade to ${nextTierLabel}` }}
               </button>
             </template>
           </div>
@@ -480,7 +480,6 @@ const tierLabel = computed(() => {
   if (tier === 'plus') return 'Tier 2 - Plus Tutor';
   return 'Tier 1 - Basic Tutor';
 });
-
 const tierReviewLabel = computed(() => {
   const s = form.value.tier_review_status || 'not_submitted';
   if (s === 'approved') return 'Approved';
@@ -507,24 +506,53 @@ const tierReviewSubmittedLabel = computed(() => {
   });
 });
 
-const isUpgradeLocked = computed(() => form.value.tutor_tier !== 'basic');
-const canUpgradeAfterApproval = computed(() => form.value.tutor_tier === 'basic' && form.value.tier_review_status === 'approved');
-// Credentials upload should be visible for all non-upgraded tutors,
-// including "pending" and "rejected" states (so they can re-submit).
+const isUpgradeLocked = computed(() => form.value.tutor_tier === 'pro');
+const currentTierLabel = computed(() => {
+  const t = form.value.tutor_tier || 'basic';
+  if (t === 'pro') return 'Tier 3 - Pro Tutor';
+  if (t === 'plus') return 'Tier 2 - Plus Tutor';
+  return 'Tier 1 - Basic Tutor';
+});
+const nextTierLabel = computed(() => {
+  const t = form.value.tutor_tier || 'basic';
+  if (t === 'basic') return 'Tier 2 - Plus Tutor';
+  if (t === 'plus') return 'Tier 3 - Pro Tutor';
+  return null;
+});
+const nextTierValue = computed(() => {
+  const t = form.value.tutor_tier || 'basic';
+  if (t === 'basic') return 'plus';
+  if (t === 'plus') return 'pro';
+  return null;
+});
+const isEligibleByBookings = computed(() => completedSessionsCount.value >= UPGRADE_ELIGIBILITY_SESSIONS);
+const canUpgradeAfterApproval = computed(() =>
+  !isUpgradeLocked.value &&
+  form.value.tier_review_status === 'approved' &&
+  isEligibleByBookings.value
+);
+// Credentials upload visible for all non-max-tier tutors not yet approved
 const showCredentialStep = computed(() => !isUpgradeLocked.value);
-// Submit button should only appear when not pending and not approved.
+// Submit button visible when not pending, not approved, not max tier, and has enough bookings
 const showSubmitForReviewAction = computed(() =>
-  !isUpgradeLocked.value && form.value.tier_review_status !== 'pending' && form.value.tier_review_status !== 'approved'
+  !isUpgradeLocked.value &&
+  form.value.tier_review_status !== 'pending' &&
+  form.value.tier_review_status !== 'approved'
 );
 const tierSubmitDisabled = computed(() =>
-  tierSubmitting.value || isUpgradeLocked.value || form.value.tier_review_status === 'pending' || canUpgradeAfterApproval.value
+  tierSubmitting.value ||
+  isUpgradeLocked.value ||
+  !isEligibleByBookings.value ||
+  form.value.tier_review_status === 'pending' ||
+  canUpgradeAfterApproval.value
 );
 const tierStageMessage = computed(() => {
-  if (isUpgradeLocked.value) return 'Upgrade complete';
-  if (canUpgradeAfterApproval.value) return 'Eligible for upgrade';
-  if (form.value.tier_review_status === 'pending') return 'Waiting for review';
-  if (form.value.tier_review_status === 'rejected') return 'Rejected';
-  return 'Ready to submit';
+  if (isUpgradeLocked.value) return 'Maximum tier reached — Pro Tutor';
+  if (!isEligibleByBookings.value) return `Need ${UPGRADE_ELIGIBILITY_SESSIONS} unique student bookings to unlock upgrade`;
+  if (canUpgradeAfterApproval.value) return `Eligible to upgrade to ${nextTierLabel.value}`;
+  if (form.value.tier_review_status === 'pending') return 'Waiting for admin review';
+  if (form.value.tier_review_status === 'rejected') return 'Review rejected — you may resubmit';
+  return `Ready to submit for ${nextTierLabel.value}`;
 });
 
 const eligibilityPercent = computed(() => {
@@ -684,8 +712,8 @@ onMounted(async () => {
 });
 
 function openPaymentModal() {
-  if (form.value.tutor_tier !== 'basic') {
-    showToast('This account already has a completed upgrade.', 'info');
+  if (isUpgradeLocked.value) {
+    showToast('You are already at the maximum tier (Pro Tutor).', 'info');
     return;
   }
   if (form.value.tier_review_status !== 'approved') {
@@ -789,12 +817,16 @@ const saveProfile = async () => {
 
 const submitTierReview = async () => {
   if (tierSubmitting.value) return;
-  if (form.value.tutor_tier !== 'basic') {
-    showToast('Your account already received the one-time tier upgrade.', 'info');
+  if (isUpgradeLocked.value) {
+    showToast('You are already at the maximum tier (Pro Tutor).', 'info');
+    return;
+  }
+  if (!isEligibleByBookings.value) {
+    showToast(`You need ${UPGRADE_ELIGIBILITY_SESSIONS} unique student bookings to be eligible.`, 'error');
     return;
   }
   if (form.value.tier_review_status === 'approved') {
-    showToast('You are already approved for eligibility. Complete payment to activate upgrade.', 'info');
+    showToast('You are already approved. Complete payment to activate upgrade.', 'info');
     return;
   }
   if (form.value.tier_review_status === 'pending') {
@@ -834,7 +866,7 @@ const submitTierReview = async () => {
     }
     credentialFiles.value = [];
     emit('profile-updated', { ...form.value });
-    showToast('Tier eligibility submitted. Waiting for admin validation.', 'success');
+    showToast(`Upgrade to ${nextTierLabel.value} submitted. Waiting for admin review.`, 'success');
   } catch (err) {
     console.error('Tier review submit error:', err);
     showToast(formatApiErrorMessage(err), 'error');
@@ -858,18 +890,26 @@ const activateTierUpgrade = async () => {
     return;
   }
 
+  const targetTier = nextTierValue.value;
+  if (!targetTier) {
+    showToast('You are already at the maximum tier.', 'info');
+    return;
+  }
+
   tierSubmitting.value = true;
   try {
     const { data } = await profileService.updateProfile(djangoProfileId.value, {
-      tutor_tier: 'plus',
+      tutor_tier: targetTier,
+      tier_review_status: 'not_submitted', // reset so they can apply for next tier
     });
-    form.value.tutor_tier = data?.tutor_tier || 'plus';
+    form.value.tutor_tier = data?.tutor_tier || targetTier;
+    form.value.tier_review_status = data?.tier_review_status || 'not_submitted';
     paymentSimulated.value = false;
     if (djangoProfileId.value) {
       sessionStorage.removeItem(`turo_upgrade_paid_${djangoProfileId.value}`);
     }
     emit('profile-updated', { ...form.value });
-    showToast('Tier upgrade activated successfully!', 'success');
+    showToast(`Tier upgrade to ${nextTierLabel.value} activated successfully!`, 'success');
   } catch (err) {
     console.error('Tier activation error:', err);
     showToast(formatApiErrorMessage(err), 'error');
