@@ -496,9 +496,10 @@ const testimonials = [
   margin: 0 auto;
   gap: 4rem;
   position: relative;
+  overflow: hidden;
 }
 .hero-bg-shapes {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
