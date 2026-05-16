@@ -18,7 +18,7 @@
             <span class="hero-tier-badge">{{ tierLabel }}</span>
           </div>
           <div class="hero-elig">
-            <span class="hero-elig-text">Sessions: {{ completedSessionsCount }}/{{ UPGRADE_ELIGIBILITY_SESSIONS }}</span>
+            <span class="hero-elig-text">Bookings: {{ completedSessionsCount }}/{{ UPGRADE_ELIGIBILITY_SESSIONS }}</span>
             <div class="hero-elig-bar" aria-hidden="true">
               <div class="hero-elig-fill" :style="{ width: eligibilityPercent + '%' }"></div>
             </div>
@@ -280,7 +280,7 @@
 
           <div class="elig-progress">
             <div class="elig-row">
-              <span class="elig-label">Completed sessions</span>
+              <span class="elig-label">Student bookings</span>
               <span class="elig-value">{{ completedSessionsCount }} / {{ UPGRADE_ELIGIBILITY_SESSIONS }}</span>
             </div>
             <div
@@ -537,7 +537,7 @@ async function loadCompletedSessionsCount(tutorUserId) {
   try {
     const { data } = await bookingService.getTutorBookings(tutorUserId);
     const bookings = Array.isArray(data) ? data : (data?.results || []);
-    completedSessionsCount.value = bookings.filter((b) => b.status === 'completed').length;
+    completedSessionsCount.value = bookings.length;
   } catch (_e) {
     completedSessionsCount.value = 0;
   }
