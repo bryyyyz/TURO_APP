@@ -537,7 +537,9 @@ async function loadCompletedSessionsCount(tutorUserId) {
   try {
     const { data } = await bookingService.getTutorBookings(tutorUserId);
     const bookings = Array.isArray(data) ? data : (data?.results || []);
-    completedSessionsCount.value = bookings.length;
+    // Count unique students — 1 per student regardless of how many sessions they booked
+    const uniqueStudents = new Set(bookings.map((b) => b.student_id || b.student));
+    completedSessionsCount.value = uniqueStudents.size;
   } catch (_e) {
     completedSessionsCount.value = 0;
   }
