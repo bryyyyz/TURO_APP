@@ -440,7 +440,7 @@ const testimonials = [
   align-items: center;
   gap: 2rem;
 }
-.nav-logo { height: 52px; width: auto; }
+.nav-logo { height: 80px; width: auto; }
 .nav-links {
   display: flex;
   gap: 2rem;
