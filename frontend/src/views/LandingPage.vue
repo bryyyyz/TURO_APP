@@ -1058,20 +1058,112 @@ const testimonials = [
 
 /* ── MOBILE ── */
 @media (max-width: 768px) {
+
+  /* NAVBAR */
+  .navbar { padding: 0.5rem 0; }
+  .navbar.scrolled { padding: 0.4rem 0; }
+  .nav-inner { padding: 0 1rem; gap: 0.5rem; }
+  .nav-logo { height: 72px; }
+  .nav-links { display: none; }
+  .nav-actions { margin-left: auto; gap: 0.5rem; }
+  .btn-nav-ghost { padding: 0.45rem 0.85rem; font-size: 0.78rem; }
+  .btn-nav-primary { padding: 0.45rem 0.85rem; font-size: 0.78rem; }
+
+  /* HERO */
   .hero {
     flex-direction: column;
-    padding: 6rem 1.25rem 3rem;
+    padding: 5.5rem 1.25rem 3rem;
     min-height: auto;
     gap: 2rem;
+    text-align: center;
   }
-  .hero-stats { gap: 1.5rem; }
-  .nav-inner { padding: 0 1.25rem; }
-  .nav-links { display: none; }
-  .features-section, .tutor-section, .testimonials-section { padding: 3.5rem 1.25rem; }
-  .tutor-section { flex-direction: column; gap: 2.5rem; }
-  .steps-row { grid-template-columns: 1fr; }
-  .how-section { padding: 3.5rem 1.25rem; }
-  .footer-inner { gap: 2rem; }
-  .footer-links { gap: 2rem; }
+  .hero-badge { font-size: 0.72rem; padding: 0.3rem 0.85rem; }
+  .hero-title { font-size: 2rem; margin-bottom: 1rem; }
+  .hero-sub { font-size: 0.95rem; margin-bottom: 1.5rem; max-width: 100%; }
+  .hero-cta { justify-content: center; gap: 0.75rem; margin-bottom: 2rem; }
+  .btn-primary-lg { padding: 0.8rem 1.4rem; font-size: 0.88rem; }
+  .btn-ghost-lg { padding: 0.8rem 1.4rem; font-size: 0.88rem; }
+  .hero-stats {
+    gap: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    background: #fff;
+    border-radius: 1rem;
+    border: 1px solid #f1f5f9;
+    overflow: hidden;
+  }
+  .hero-stat {
+    padding: 1rem;
+    border-right: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    align-items: center;
+  }
+  .hero-stat:nth-child(2n) { border-right: none; }
+  .hero-stat:nth-child(3), .hero-stat:nth-child(4) { border-bottom: none; }
+  .stat-num { font-size: 1.3rem; }
+  .stat-lbl { font-size: 0.7rem; }
+
+  /* TRUST BAR */
+  .trust-bar { padding: 1.5rem 1.25rem; }
+  .trust-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    justify-items: start;
+  }
+  .trust-item { gap: 0.5rem; }
+  .trust-icon { width: 34px; height: 34px; border-radius: 8px; }
+  .trust-text strong { font-size: 0.78rem; }
+  .trust-text span { font-size: 0.65rem; }
+
+  /* FEATURES */
+  .features-section { padding: 3rem 1.25rem; }
+  .section-header { margin-bottom: 2rem; }
+  .section-header h2 { font-size: 1.6rem; }
+  .section-header p { font-size: 0.88rem; }
+  .features-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .feature-card { padding: 1.5rem; }
+  .feature-card:hover { transform: none; }
+
+  /* HOW IT WORKS */
+  .how-section { padding: 3rem 1.25rem; }
+  .steps-row { grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem; }
+  .step-card { padding: 1.5rem; text-align: left; display: flex; flex-direction: row; align-items: flex-start; gap: 1rem; }
+  .step-num { font-size: 1.8rem; min-width: 2.5rem; margin-bottom: 0; line-height: 1.2; }
+  .step-icon { margin: 0; flex-shrink: 0; width: 44px; height: 44px; }
+  .step-card h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+  .step-card p { font-size: 0.82rem; }
+  .how-cta .btn-primary-lg { width: 100%; justify-content: center; }
+
+  /* FOR TUTORS */
+  .tutor-section { padding: 3rem 1.25rem; flex-direction: column; gap: 2rem; }
+  .tutor-content h2 { font-size: 1.6rem; }
+  .tutor-sub { font-size: 0.9rem; margin-bottom: 1.25rem; }
+  .tutor-perks { gap: 0.5rem; margin-bottom: 1.5rem; }
+  .tutor-perks li { font-size: 0.85rem; }
+  .tutor-btn { width: 100%; justify-content: center; }
+
+  /* SUCCESS STORIES */
+  .testimonials-section { padding: 3rem 1.25rem; }
+  .testimonials-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .testimonial-card { padding: 1.25rem; }
+  .t-quote { font-size: 0.85rem; }
+
+  /* CTA BANNER */
+  .cta-banner { padding: 3rem 1.25rem; }
+  .cta-content h2 { font-size: 1.6rem; }
+  .cta-content p { font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .cta-btns { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .btn-cta-white, .btn-cta-outline { text-align: center; padding: 0.85rem 1.5rem; }
+
+  /* FOOTER */
+  .landing-footer { padding: 2.5rem 1.25rem 1.25rem; }
+  .footer-inner { flex-direction: column; gap: 2rem; margin-bottom: 2rem; }
+  .footer-brand { min-width: unset; }
+  .footer-logo { height: 44px; }
+  .footer-brand p { font-size: 0.8rem; }
+  .footer-links { gap: 1.5rem; flex-wrap: wrap; }
+  .footer-col { min-width: 120px; }
 }
 </style>
