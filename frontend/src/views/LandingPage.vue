@@ -9,7 +9,7 @@
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
           <a href="#for-tutors">For Tutors</a>
-          <a href="#testimonials">Testimonials</a>
+          <a href="#testimonials">Reviews</a>
         </div>
         <div class="nav-actions">
           <router-link to="/login/student" class="btn-nav-ghost">Log In</router-link>
