@@ -1480,54 +1480,91 @@ watch([filterByLocation, () => props.profile?.municipality, () => props.profile?
 /* ── MOBILE ── */
 @media (max-width: 768px) {
   .desktop-only { display: none !important; }
-  .discover-tab { gap: 0; }
-  .filter-bar { padding: 1rem 0 0; position: relative; background: transparent; }
-  .search-field { border-radius: 0.85rem; padding: 0.7rem 1rem; }
-  .category-scroll { padding-bottom: 0; }
-  .results-bar { margin-top: 1rem; }
-  .tutors-grid { grid-template-columns: 1fr; gap: 1rem; margin-top: 0.5rem; }
+  .discover-tab { gap: 0.75rem; }
+  
+  /* Location banner - stack vertically on mobile */
+  .location-banner { flex-direction: column; align-items: flex-start; gap: 0.65rem; padding: 0.85rem 1rem; }
+  .loc-left { align-items: flex-start; }
+  .loc-scope-group { width: 100%; justify-content: flex-start; }
+  .scope-pill { padding: 0.4rem 0.75rem; font-size: 0.75rem; }
+  
+  /* Browse mode row */
+  .browse-mode-row { flex-direction: column; align-items: flex-start; gap: 0.65rem; padding: 0.75rem 1rem; }
+  .browse-toggle { width: 100%; }
+  .browse-pill { flex: 1; text-align: center; padding: 0.55rem 0.5rem; font-size: 0.8rem; }
+  
+  /* Filter bar - stack vertically */
+  .filter-bar { flex-direction: column; padding: 0.75rem; gap: 0.65rem; }
+  .search-field { width: 100%; }
+  .category-scroll { width: 100%; }
+  .sort-select { width: 100%; }
+  
+  .tutors-grid { grid-template-columns: 1fr; gap: 0.75rem; }
 
-  /* Listings: horizontal thumb + body — do NOT fix card height or the Book
-     button and footer are clipped by overflow:hidden on .tutor-card */
+  /* Listing cards: horizontal thumb */
   .tutors-grid--listings .tutor-card {
-    border-radius: 1.25rem;
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    min-height: 120px;
-    height: auto;
-    overflow: visible;
+    align-items: stretch;
+    overflow: hidden;
   }
   .tutors-grid--listings .preview-area {
-    width: 120px;
-    height: 120px;
+    width: 110px;
+    min-width: 110px;
+    height: auto;
     flex-shrink: 0;
     border-radius: 0;
-    align-self: flex-start;
   }
   .tutors-grid--listings .preview-overlay,
   .tutors-grid--listings .time-badge,
   .tutors-grid--listings .btn-preview { display: none; }
-  .tutors-grid--listings .card-body { flex: 1; padding: 0.85rem; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-  .tutors-grid--listings .tutor-top { margin-bottom: 0.3rem; }
+  .tutors-grid--listings .card-body { flex: 1; padding: 0.85rem; min-width: 0; }
 
-  /* Tutor summary cards stay avatar-first */
-  .tutors-grid--summary .tutor-card { border-radius: 1.1rem; }
-  .tutor-row { flex-direction: column; align-items: stretch; padding: 0.95rem; }
-  .tutor-row-right { align-items: flex-start; flex-direction: row; gap: 1rem; }
+  /* Tutor summary cards — keep avatar + info side by side */
+  .tutor-row { flex-direction: column; padding: 0.9rem; gap: 0.75rem; }
+  .tutor-row-left { flex-direction: row; align-items: flex-start; gap: 0.75rem; }
+  .tutor-row-main { min-width: 0; flex: 1; }
+
+  /* Fix name truncation — allow wrapping on mobile */
+  .tutor-name { white-space: normal; overflow: visible; text-overflow: unset; font-size: 0.95rem; }
+  .row-top { flex-wrap: wrap; gap: 0.4rem; }
+  .meta-pills { flex-wrap: wrap; gap: 0.35rem; }
+
+  /* Right side: price + buttons in a row below */
+  .tutor-row-right { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
   .row-price { text-align: left; }
-  .avatar-lg { width: 56px; height: 56px; }
-  .row-tags { margin-top: 0.4rem; }
-  .row-actions { width: 100%; justify-content: flex-end; }
-  .name-row h3 { font-size: 0.9rem; }
-  .expertise { font-size: 0.72rem; }
-  .rating-badge { padding: 0.2rem 0.45rem; }
-  .rating-badge span:last-child { font-size: 0.72rem; }
-  .tag-row { margin-bottom: 0.5rem; }
-  .tag { font-size: 0.62rem; padding: 0.2rem 0.5rem; }
+  .price-big { font-size: 1rem; }
+  .row-actions { gap: 0.4rem; }
+  .btn-secondary, .btn-primary { padding: 0.5rem 0.75rem; font-size: 0.75rem; }
+
+  .avatar-lg { width: 52px; height: 52px; flex-shrink: 0; }
+  .row-subjects { font-size: 0.8rem; white-space: normal; }
+  .row-loc { font-size: 0.72rem; white-space: normal; }
+  .row-tags { margin-top: 0.35rem; }
+  .tag { font-size: 0.65rem; padding: 0.18rem 0.5rem; }
+
+  /* Listing card body */
+  .name-row h3 { font-size: 0.88rem; }
+  .expertise { font-size: 0.75rem; }
+  .tag-row { margin-bottom: 0.4rem; }
   .card-footer { padding-top: 0.5rem; }
-  .price strong { font-size: 1rem; }
+  .price strong { font-size: 0.95rem; }
   .reviews { display: none; }
-  .btn-book { padding: 0.45rem 0.9rem; font-size: 0.75rem; border-radius: 0.5rem; }
+  .btn-book { padding: 0.45rem 0.85rem; font-size: 0.75rem; }
+  
+  /* Modals */
+  .modal-content { max-width: 95vw; margin: 1rem; max-height: 88vh; border-radius: 1.25rem; }
+  .modal-header { padding: 1.25rem 1.25rem 1rem; }
+  .modal-body { padding: 1.25rem; }
+  .modal-footer { padding: 1rem 1.25rem; flex-direction: column; gap: 0.65rem; }
+  .modal-footer button { width: 100%; }
+  .payment-modal { max-width: 95vw; }
+  .pay-header { padding: 1.25rem; }
+  .pay-summary { margin: 1rem 1.25rem 0; }
+  .pay-methods-label { margin: 1rem 1.25rem 0.5rem; }
+  .pay-methods-list { padding: 0 1.25rem; }
+  .tpm-hero { flex-direction: column; padding: 1.25rem; align-items: center; text-align: center; }
+  .tpm-meta-row, .tpm-location, .tpm-subjects { justify-content: center; }
+  .slot-option { flex-direction: column; align-items: flex-start; gap: 0.4rem; padding: 0.75rem 1rem; }
 }
 </style>
