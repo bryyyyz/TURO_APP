@@ -374,7 +374,8 @@ watch(
   () => profile.value?.user,
   (uid) => {
     if (uid) {
-      loadStudentActivityFeed(false);
+      // Don't eagerly fetch activity feed on mount — load it lazily when
+      // the notification panel is opened for the first time.
       setupRealtime();
     }
   },
@@ -449,7 +450,7 @@ async function mergeSignupMetadataIntoDjangoProfile(sessionUser, role, row) {
 }
 
 /** Load the Django profile for a given Supabase session user. */
-async function loadProfileForSession(sessionUser) {
+async function loadProfileForSession(sessionUser, event = 'INITIAL_SESSION') {
   user.value = sessionUser;
   try {
     const { data } = await profileService.getProfileByEmail(sessionUser.email, 'student');
@@ -459,7 +460,11 @@ async function loadProfileForSession(sessionUser) {
         ...profiles[0],
         email: profiles[0].email || sessionUser.email,
       };
-      row = await mergeSignupMetadataIntoDjangoProfile(sessionUser, 'student', row);
+      // Only attempt metadata merge on actual new logins, not page refreshes.
+      // This avoids 2 extra sequential HTTP calls (PATCH + GET) on every reload.
+      if (event === 'SIGNED_IN') {
+        row = await mergeSignupMetadataIntoDjangoProfile(sessionUser, 'student', row);
+      }
       profile.value = row;
     } else {
       const fallback = fallbackNameFromSession(sessionUser, 'Student');
@@ -485,10 +490,10 @@ async function loadProfileForSession(sessionUser) {
 onMounted(async () => {
   document.addEventListener('click', onGlobalClick);
 
-  // Listen for auth events. This covers both the normal login flow AND the
-  // hard-refresh case where Supabase fires INITIAL_SESSION once it has
-  // restored the token from localStorage (getSession alone can return null
-  // during that brief initialization window).
+  // Use a flag to prevent double-loading the profile when both
+  // onAuthStateChange(INITIAL_SESSION) and getSession() resolve around the same time.
+  let profileLoaded = false;
+
   supabase.auth.onAuthStateChange(async (event, newSession) => {
     if (event === 'SIGNED_OUT') {
       user.value = null;
@@ -499,7 +504,6 @@ onMounted(async () => {
 
     if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
       if (!newSession?.user) {
-        // No active session — send to login
         router.replace('/login/student');
         return;
       }
@@ -508,24 +512,24 @@ onMounted(async () => {
         console.warn('[StudentDashboard] Cross-tab session change — redirecting to login');
         user.value = null;
         profile.value = null;
+        profileLoaded = false;
         router.replace('/login/student');
         return;
       }
-      // Only fetch profile if we don't already have it for this user
-      if (!profile.value || profile.value.email !== newSession.user.email) {
-        await loadProfileForSession(newSession.user);
+      // Only fetch profile once per session
+      if (!profileLoaded && (!profile.value || profile.value.email !== newSession.user.email)) {
+        profileLoaded = true;
+        await loadProfileForSession(newSession.user, event);
       }
     }
   });
 
-  // Also attempt an immediate getSession() call so data loads without waiting
-  // for the auth event on fast connections / already-initialized sessions.
+  // Attempt an immediate getSession() so data loads on fast connections
+  // without waiting for the auth event.
   const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user && !profile.value) {
-    await loadProfileForSession(session.user);
-  } else if (!session?.user && !profile.value) {
-    // Give the INITIAL_SESSION event a moment before hard-redirecting
-    await nextTick();
+  if (session?.user && !profileLoaded && !profile.value) {
+    profileLoaded = true;
+    await loadProfileForSession(session.user, 'INITIAL_SESSION');
   }
 });
 
